@@ -9,7 +9,8 @@ import { getVercelOidcToken } from "@vercel/oidc";
 const GATEWAY = "https://ai-gateway.vercel.sh/v1/chat/completions";
 const RESEARCH_MODEL = process.env.GL_RESEARCH_MODEL || "perplexity/sonar";
 const STRUCT_MODELS = (process.env.GL_STRUCT_MODELS || "google/gemini-3-flash,openai/gpt-5-mini,google/gemini-2.5-flash").split(",");
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_MODELS = (process.env.GEMINI_MODEL || "gemini-flash-latest,gemini-2.5-flash,gemini-3-flash").split(",");
+let GEMINI_MODEL = GEMINI_MODELS[0];
 
 export type ResearchOut = { text: string; sources: { title: string; url: string }[]; model: string };
 
@@ -75,14 +76,21 @@ async function geminiCall(body: any, timeoutMs = 60000) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-      method: "POST", signal: ctl.signal,
-      headers: { "x-goog-api-key": key, "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const txt = await r.text();
-    if (!r.ok) throw new HttpErr(r.status, `gemini ${r.status}: ${txt.slice(0, 300)}`);
-    return JSON.parse(txt);
+    // Walk the model list on 404 (model retired/renamed) and remember the first that works.
+    for (let i = Math.max(0, GEMINI_MODELS.indexOf(GEMINI_MODEL)); i < GEMINI_MODELS.length; i++) {
+      const model = GEMINI_MODELS[i].trim();
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST", signal: ctl.signal,
+        headers: { "x-goog-api-key": key, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const txt = await r.text();
+      if (r.status === 404 && i < GEMINI_MODELS.length - 1) continue;
+      if (!r.ok) throw new HttpErr(r.status, `gemini ${model} ${r.status}: ${txt.slice(0, 300)}`);
+      GEMINI_MODEL = model;
+      return JSON.parse(txt);
+    }
+    throw new HttpErr(404, "No Gemini model available");
   } finally {
     clearTimeout(t);
   }
@@ -99,8 +107,9 @@ export async function research(prompt: string): Promise<ResearchOut> {
       const text = (cand?.content?.parts || []).map((p: any) => p.text || "").join("\n");
       const chunks = cand?.groundingMetadata?.groundingChunks || [];
       const sources = chunks.map((c: any) => ({ title: c.web?.title || "source", url: c.web?.uri || "" })).filter((s: any) => s.url);
-      for (const u of text.match(URL_RE) || []) sources.push({ title: new URL(u).host, url: u });
-      return { text, sources: dedupe(sources), model: `gemini:${GEMINI_MODEL}+google_search` };
+      for (const u of text.match(URL_RE) || []) sources.push({ title: safeHost(u), url: u });
+      const resolved = await Promise.all(sources.slice(0, 14).map(async (s: { title: string; url: string }) => ({ title: s.title, url: await unredirect(s.url) })));
+      return { text, sources: dedupe(resolved), model: `gemini:${GEMINI_MODEL}+google_search` };
     } catch (e: any) {
       errors.push(String(e?.message || e));
     }
@@ -156,6 +165,21 @@ export function parseJson(text: string) {
     const a = s.indexOf("{"), b = s.lastIndexOf("}");
     if (a >= 0 && b > a) return JSON.parse(s.slice(a, b + 1));
     throw new Error("Model did not return JSON");
+  }
+}
+
+/** Grounding chunks come back as vertexaisearch redirect links; resolve them to the real page. */
+async function unredirect(u: string): Promise<string> {
+  if (!/vertexaisearch\.cloud\.google\.com/.test(u)) return u;
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 4000);
+  try {
+    const r = await fetch(u, { redirect: "manual", signal: ctl.signal });
+    return r.headers.get("location") || u;
+  } catch {
+    return u;
+  } finally {
+    clearTimeout(t);
   }
 }
 

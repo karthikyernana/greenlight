@@ -94,8 +94,18 @@ Be specific and current. Prefer the provider's own docs.`;
   }
 
   if (res.status === "rejected") {
-    yield { type: "step", id: "research", label: "Web research", status: "warn", detail: String(res.reason?.message || res.reason).slice(0, 300) };
-    yield { type: "error", message: "The research model isn't reachable right now, so a full guide can't be generated. The Composio check above still ran. Try again in a minute." };
+    const why = String(res.reason?.message || res.reason);
+    const noKey = /No GEMINI_API_KEY|credit card|No AI Gateway credentials|401|403/.test(why) && !process.env.GEMINI_API_KEY;
+    yield { type: "step", id: "research", label: "Web research", status: "warn", detail: noKey ? "No model key is configured on this deployment yet" : why.slice(0, 240) };
+    // Still run the live probes so the developer gets something real.
+    const guess = input.domain || `${slugify(name).replace(/-/g, "")}.com`;
+    yield { type: "step", id: "probe", label: `Probing ${guess} for OAuth/OIDC discovery and developer portal`, status: "running" };
+    const [d, dd] = await Promise.all([probeDiscovery(guess), probeDevDocs(guess)]);
+    const az = d.found?.authorization_endpoint ? await probeAuthorize(d.found.authorization_endpoint) : null;
+    yield { type: "step", id: "probe", label: "Live endpoint probes", status: d.found ? "done" : "warn", detail: [...d.probes, dd.probe, ...(az ? [az] : [])].map((p) => p.result).join(" · ").slice(0, 400) };
+    yield { type: "error", message: noKey
+      ? "Live research is off on this deployment: no model key is set (GEMINI_API_KEY). The Composio check and endpoint probes above ran live. Ready guides in the library work as normal."
+      : "The research model isn't reachable right now (rate limit or outage). The checks above still ran. Try again in a minute." };
     return;
   }
   const r = res.value;
