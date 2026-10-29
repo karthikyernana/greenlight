@@ -102,14 +102,20 @@ export async function research(prompt: string): Promise<ResearchOut> {
   const errors: string[] = [];
   if (process.env.GEMINI_API_KEY) {
     try {
-      const j = await withRetry(() => geminiCall({ contents: [{ role: "user", parts: [{ text: prompt }] }], tools: [{ google_search: {} }] }));
+      let grounded = true;
+      const j = await withRetry(() => geminiCall({ contents: [{ role: "user", parts: [{ text: prompt }] }], tools: [{ google_search: {} }] })).catch(async (e: any) => {
+        // Some keys/models reject the search tool (400). Fall back to an ungrounded call that must cite URLs inline.
+        if (e?.status !== 400) throw e;
+        grounded = false;
+        return withRetry(() => geminiCall({ contents: [{ role: "user", parts: [{ text: prompt + "\nInclude the full URL of every official page you rely on." }] }] }));
+      });
       const cand = j.candidates?.[0];
       const text = (cand?.content?.parts || []).map((p: any) => p.text || "").join("\n");
       const chunks = cand?.groundingMetadata?.groundingChunks || [];
       const sources = chunks.map((c: any) => ({ title: c.web?.title || "source", url: c.web?.uri || "" })).filter((s: any) => s.url);
       for (const u of text.match(URL_RE) || []) sources.push({ title: safeHost(u), url: u });
       const resolved = await Promise.all(sources.slice(0, 14).map(async (s: { title: string; url: string }) => ({ title: s.title, url: await unredirect(s.url) })));
-      return { text, sources: dedupe(resolved), model: `gemini:${GEMINI_MODEL}+google_search` };
+      return { text, sources: dedupe(resolved), model: `gemini:${GEMINI_MODEL}${grounded ? "+google_search" : " (ungrounded)"}` };
     } catch (e: any) {
       errors.push(String(e?.message || e));
     }
