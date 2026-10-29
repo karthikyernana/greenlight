@@ -94,7 +94,7 @@ export const seeds: any[] = [
     ],
     steps: [
       { id: "create", title: "Create the app from a manifest", detail: "api.slack.com/apps → Create New App → From manifest. Declare bot scopes and redirect URLs (Composio BYO: " + COMPOSIO_CB + ").", owner: "both", agent: "Write the manifest with least-privilege scopes", human: "Paste it while signed in and pick a dev workspace", activeMinutes: 15, link: "https://api.slack.com/apps", sources: [0] },
-      { id: "distribute", title: "Activate public distribution", detail: "Four checks, all of which must pass: remove hard-coded tokens, add an OAuth redirect URL, use HTTPS for every URL, and review scopes.", owner: "agent", agent: "Fix any check that fails; test install on a second workspace", activeMinutes: 20, sources: [0, 4], evidence: "sourced" },
+      { id: "distribute", title: "Activate public distribution", detail: "Slack shows a checklist that has to pass before the button turns on: no hard-coded tokens, an OAuth redirect URL, and HTTPS for every URL. A single http:// redirect is enough to block it.", owner: "agent", agent: "Fix any check that fails; test install on a second workspace", activeMinutes: 20, sources: [0, 4], evidence: "sourced" },
       { id: "installs", title: "Get 10 active workspace installs", detail: "Required before you can submit to the Marketplace, and the app has to stay at 10 or more for the whole review.", owner: "you", agent: "Draft the beta invite and an onboarding DM", human: "Recruit beta workspaces", activeMinutes: 120, waitDays: [7, 30], requiredFor: ["marketplace"], sources: [2] },
       { id: "submit", title: "Submit for Marketplace review", detail: "Preliminary feedback takes up to 10 business days, then a functional review. **Every resubmission resets your place in the queue.**", owner: "both", agent: "Pre-check against the guidelines; write the privacy policy, support page and test instructions", human: "Submit and respond to feedback", activeMinutes: 240, waitDays: [14, 70], after: ["installs"], requiredFor: ["marketplace"], sources: [1, 4] },
     ],
@@ -198,7 +198,7 @@ export const seeds: any[] = [
   // ───────────────────────────── Gmail / Google ─────────────────────────────
   {
     slug: "gmail", name: "Gmail (Google)", domain: "google.com", category: "Email & calendar",
-    summary: "Sign-in is instant. Reading or sending Gmail uses restricted scopes: Google verification plus an annual third-party CASA security assessment. Expect around 6+ weeks. Until then you're capped at 100 test users whose tokens expire every 7 days.",
+    summary: "Sign-in is instant. Send-only is a sensitive scope (about 10 business days of review). Reading mail is restricted: Google verification plus an annual third-party CASA security assessment, around 6+ weeks. Until then you're capped at 100 test users whose tokens expire every 7 days.",
     console: "https://console.cloud.google.com/auth/overview", appType: "Google Cloud OAuth client (Web application)",
     composio: { managed: "available", slug: "gmail", note: "Composio-managed Gmail skips verification and CASA for you. Users see “Composio” on the consent screen, not your app. Bring your own once you want your own brand there.", evidence: "tested" },
     capabilities: [

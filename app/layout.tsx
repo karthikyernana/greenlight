@@ -8,6 +8,7 @@ const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 const display = Instrument_Serif({ subsets: ["latin"], weight: "400", variable: "--font-instrument" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://oauth-greenlight.vercel.app"),
   title: "Greenlight: how long until your OAuth app can launch?",
   description: "Scope-aware OAuth app setup & approval guides for AI agent builders. Know the wait, start the slow parts today.",
 };
