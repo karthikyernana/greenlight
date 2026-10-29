@@ -99,7 +99,7 @@ export function fmtDays(min: number, max: number): string {
   const f = (d: number) => {
     if (d < 0.08) return "minutes";
     if (d < 1) return `${Math.max(1, Math.round(d * 6))}h`;
-    if (d < 14) return `${Math.round(d)}d`;
+    if (d < 13.5) return `${Math.round(d)}d`;
     if (d < 60) return `${Math.round(d / 7)}w`;
     return `${Math.round(d / 30)}mo`;
   };
