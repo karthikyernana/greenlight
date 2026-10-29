@@ -85,7 +85,7 @@ export default function GuideView({ guide: g, initialNeed }: { guide: Guide; ini
           <div className="mt-1 text-sm text-ink-2">{TIER_META[tier].blurb}.</div>
           <div className="mt-4 grid grid-cols-2 gap-3 border-t hairline pt-4 text-sm">
             <div><div className="text-[11px] uppercase tracking-wider text-ink-3">Hands-on effort</div><div className="font-medium">{fmtEffort(sch.activeMinutes)}</div></div>
-            <div><div className="text-[11px] uppercase tracking-wider text-ink-3">Agent can do</div><div className="font-medium">{steps.filter((s) => s.owner !== "you").length} of {steps.length} steps</div></div>
+            <div><div className="text-[11px] uppercase tracking-wider text-ink-3">Agent can help with</div><div className="font-medium">{steps.filter((s) => s.owner !== "you").length} of {steps.length} steps</div></div>
           </div>
           <div className="mt-4 border-t hairline pt-4">
             <ComposioBadge managed={g.composio.managed} />
@@ -216,12 +216,12 @@ export default function GuideView({ guide: g, initialNeed }: { guide: Guide; ini
       </section>
 
       {/* Action bar */}
-      <div className="fixed inset-x-0 bottom-4 z-30 px-4">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-1.5 rounded-2xl border hairline bg-ink/95 p-1.5 text-[13px] text-white shadow-2xl backdrop-blur">
-          <button onClick={() => copy(shareUrl(), "Share link copied")} className="rounded-xl px-3 py-2 hover:bg-white/10">🔗 Copy link</button>
-          <button onClick={() => copy(toMarkdown(g, sel, shareUrl()), "Markdown copied")} className="rounded-xl px-3 py-2 hover:bg-white/10">Copy as Markdown</button>
-          <button onClick={() => copy(toAgentPrompt(g, sel), "Agent prompt copied: paste into Claude Code / Cursor")} className="rounded-xl bg-go px-3 py-2 font-medium hover:brightness-110">⚙ Hand off to a coding agent</button>
-          <button onClick={() => copy(toEmailDraft(g), "Email draft copied")} className="rounded-xl px-3 py-2 hover:bg-white/10">✉ Draft email to {g.name.split(" ")[0]}</button>
+      <div className="fixed inset-x-0 bottom-3 z-30 px-3">
+        <div className="mx-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-2xl border hairline bg-ink/95 p-1 text-[13px] text-white shadow-2xl backdrop-blur">
+          <button onClick={() => copy(shareUrl(), "Share link copied")} className="shrink-0 rounded-xl px-3 py-2 hover:bg-white/10">🔗<span className="hidden sm:inline"> Copy link</span><span className="sm:hidden"> Link</span></button>
+          <button onClick={() => copy(toMarkdown(g, sel, shareUrl()), "Markdown copied")} className="shrink-0 rounded-xl px-3 py-2 hover:bg-white/10"><span className="hidden sm:inline">Copy as </span>Markdown</button>
+          <button onClick={() => copy(toAgentPrompt(g, sel), "Agent prompt copied: paste into Claude Code / Cursor")} className="shrink-0 rounded-xl bg-go px-3 py-2 font-medium hover:brightness-110">⚙ <span className="hidden sm:inline">Hand off to a coding agent</span><span className="sm:hidden">Agent prompt</span></button>
+          <button onClick={() => copy(toEmailDraft(g), "Email draft copied")} className="shrink-0 rounded-xl px-3 py-2 hover:bg-white/10">✉<span className="hidden sm:inline"> Draft email to {g.name.split(" ")[0]}</span><span className="sm:hidden"> Email</span></button>
         </div>
         {toast && <div className="mx-auto mt-2 w-fit rounded-full bg-go px-4 py-1.5 text-[13px] text-white rise">{toast}</div>}
       </div>
@@ -244,7 +244,7 @@ function StepRow({ s, i, done, onToggle, sources }: { s: Step; i: number; done: 
             {s.waitDays[1] > 0 && <span className="pill tone-wait">⏳ {fmtDays(s.waitDays[0], s.waitDays[1])} wait</span>}
             {s.cost && <span className="pill tone-info">$ {s.cost}</span>}
           </div>
-          <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-2"><Md text={s.detail} /></p>
+          <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-2 [overflow-wrap:anywhere]"><Md text={s.detail} /></p>
           {(s.agent || s.human) && (
             <div className="mt-3 grid gap-2 text-[13.5px] sm:grid-cols-2">
               {s.agent && <div className="rounded-lg bg-go-bg/60 px-3 py-2"><span className="font-medium text-go">Agent: </span>{s.agent}</div>}
@@ -293,7 +293,7 @@ function Timeline({ items, max }: { items: (Step & { startMax: number; endMax: n
       </div>
       <div className="mt-2 grid grid-cols-[minmax(110px,34%)_1fr] gap-3 text-[11px] text-ink-3">
         <div />
-        <div className="flex justify-between font-mono">{ticks.map((t, i) => <span key={i}>{t < 1 ? (i === 0 ? "day 0" : `${Math.round(t * 6)}h`) : `${Math.round(t)}d`}</span>)}</div>
+        <div className="flex justify-between font-mono">{ticks.map((t, i) => <span key={i}>{i === 0 ? "day 0" : t < 1 ? `${Math.max(1, Math.round(t * 6))}h` : max < 8 ? `${+t.toFixed(1)}d` : `${Math.round(t)}d`}</span>)}</div>
       </div>
     </section>
   );

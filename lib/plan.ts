@@ -108,7 +108,8 @@ export function fmtDays(min: number, max: number): string {
   const a = f(min), b = f(max);
   if (min < 1 && max <= 1.01) return "≤1 day";
   if (a === b) return `~${b}`;
-  return `${min < 1 ? "<1d" : a}–${b}`;
+  if (min < 1) return `≤${b}`;
+  return `${a}–${b}`;
 }
 
 export function fmtEffort(min: number): string {

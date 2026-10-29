@@ -35,7 +35,7 @@ export default function Library({ index, curatedCount }: { index: IndexEntry[]; 
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="display text-3xl">Ready guides</h2>
-          <p className="text-sm text-ink-3">{curatedCount} hand-researched{ready.length > curatedCount ? ` + ${ready.length - curatedCount} agent-generated` : ""} · worst-case difficulty and approval wait across all scopes</p>
+          <p className="text-sm text-ink-3">{curatedCount} hand-researched{ready.length > curatedCount ? ` + ${ready.length - curatedCount} agent-generated` : ""} · difficulty and wait for the most common agent needs, worst case underneath</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {FILTERS.map((x) => (
