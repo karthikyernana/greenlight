@@ -1,0 +1,1354 @@
+[
+ {
+  "slug": "gmail",
+  "name": "Gmail",
+  "tools": 63,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Gmail?",
+   "Why am I seeing \"App is blocked\" when connecting Gmail?",
+   "Why am I getting \"Gmail API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?",
+   "Why is my Gmail trigger slow?",
+   "Why am I getting \"Quota Exhausted\" or \"rate limit exhausted\"?",
+   "How do I send an email with an attachment?",
+   "Why can Gmail filter setup show an app-blocked error?",
+   "When should I avoid gmail.metadata when fetching full Gmail email content?"
+  ],
+  "description": "Gmail is Google\u2019s email service, featuring spam protection, search functions, and seamless integration with other G Suite apps for productivity"
+ },
+ {
+  "slug": "googlecalendar",
+  "name": "Google Calendar",
+  "tools": 50,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Calendar?",
+   "Why am I seeing \"App is blocked\" when connecting Google Calendar?",
+   "Why am I getting \"Google Calendar API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?"
+  ],
+  "description": "Google Calendar is a time management tool providing scheduling features, event reminders, and integration with email and other apps for streamlined organization"
+ },
+ {
+  "slug": "googledrive",
+  "name": "Google Drive",
+  "tools": 105,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Drive?",
+   "Why am I seeing \"App is blocked\" when connecting Google Drive?",
+   "Why am I getting \"Google Drive API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?"
+  ],
+  "description": "Google Drive is a cloud storage solution for uploading, sharing, and collaborating on files across devices, with robust search and offline access"
+ },
+ {
+  "slug": "googlesheets",
+  "name": "Google Sheets",
+  "tools": 58,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Sheets?",
+   "Why am I seeing \"App is blocked\" when connecting Google Sheets?",
+   "Why am I getting \"Google Sheets API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?",
+   "Why am I getting \"Quota Exhausted\" or \"rate limit exhausted\"?"
+  ],
+  "description": "Google Sheets is a cloud-based spreadsheet tool enabling real-time collaboration, data analysis, and integration with other Google Workspace apps"
+ },
+ {
+  "slug": "googledocs",
+  "name": "Google Docs",
+  "tools": 48,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Docs?",
+   "Why am I seeing \"App is blocked\" when connecting Google Docs?",
+   "Why am I getting \"Google Docs API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?",
+   "Why am I getting \"Quota Exhausted\" or \"rate limit exhausted\"?"
+  ],
+  "description": "Google Docs is a cloud-based word processor with real-time collaboration, version history, and integration with other Google Workspace apps"
+ },
+ {
+  "slug": "youtube",
+  "name": "YouTube",
+  "tools": 61,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for YouTube?",
+   "Why am I getting quota errors on YouTube?"
+  ],
+  "description": "YouTube is a video-sharing platform with user-generated content, live streaming, and monetization opportunities, widely used for marketing, education, and entertainment"
+ },
+ {
+  "slug": "github",
+  "name": "GitHub",
+  "tools": 899,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "Does Composio support GitHub Apps?"
+  ],
+  "description": "GitHub is a code hosting platform for version control and collaboration, offering Git-based repository management, issue tracking, and continuous integration features"
+ },
+ {
+  "slug": "gitlab",
+  "name": "GitLab",
+  "tools": 131,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for GitLab?"
+  ],
+  "description": "A web-based DevOps lifecycle tool that provides a Git repository manager providing wiki, issue-tracking, and CI/CD pipeline features."
+ },
+ {
+  "slug": "bitbucket",
+  "name": "Bitbucket",
+  "tools": 118,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Bitbucket is a Git-based code hosting and collaboration platform supporting private and public repositories, enabling teams to manage and review code through pull requests and integrations"
+ },
+ {
+  "slug": "slack",
+  "name": "Slack",
+  "tools": 171,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "What does the Composio + Slack integration do?",
+   "How does Composio handle my Slack data?",
+   "How do I set up custom OAuth credentials for Slack?",
+   "When do users see \"This app isn't listed in the Slack Marketplace\u2026\"?",
+   "Why am I being asked to submit a request during auth?",
+   "How can a workspace member complete the connection without asking for permissions or approvals?",
+   "What is the difference between Slack and Slackbot toolkits?",
+   "Where can I find Slack's available scopes?",
+   "Why am I getting a redirect URI mismatch error?",
+   "How do I set up Slack event webhooks?",
+   "Why am I getting scope errors on Slack?",
+   "What does the as_user parameter do in Slack tools?",
+   "Why aren't my Slack triggers working?"
+  ],
+  "description": "Slack is a channel-based messaging platform. With Slack, people can work together more effectively, connect all their software tools and services, and find the information they need to do their best work - all within a secure, enterprise-gr"
+ },
+ {
+  "slug": "discord",
+  "name": "Discord",
+  "tools": 28,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "An instant messaging and VoIP social platform."
+ },
+ {
+  "slug": "microsoft_teams",
+  "name": "Microsoft Teams",
+  "tools": 238,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "S2S_OAUTH2"
+  ],
+  "faq": [],
+  "description": "Microsoft Teams integrates chat, video meetings, and file storage within Microsoft 365, providing virtual collaboration and communication for distributed teams"
+ },
+ {
+  "slug": "outlook",
+  "name": "Outlook",
+  "tools": 329,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "S2S_OAUTH2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Microsoft (Outlook)?",
+   "Why does the Outlook new message trigger only return a message ID?",
+   "Why doesn't OUTLOOK_SEND_EMAIL return message details?",
+   "What's the @odata.context / @odata URL?",
+   "Why do Outlook connections show \"Needs Admin Approval\" or \"admin approval required\"?"
+  ],
+  "description": "Outlook is Microsoft's email and calendaring platform integrating contacts and scheduling, enabling users to manage communications and events in a unified workspace"
+ },
+ {
+  "slug": "one_drive",
+  "name": "OneDrive",
+  "tools": 98,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "S2S_OAUTH2"
+  ],
+  "faq": [
+   "Why am I getting 404 on ONE_DRIVE_DOWNLOAD_FILE for a shared file?"
+  ],
+  "description": "OneDrive is Microsoft\u2019s cloud storage solution enabling users to store, sync, and share files across devices, offering offline access, real-time collaboration, and enterprise-grade security"
+ },
+ {
+  "slug": "notion",
+  "name": "Notion",
+  "tools": 60,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [
+   "Why do Notion operations show \"Composio\" instead of the user's name?",
+   "How do I grant access to more Notion pages?",
+   "Does Notion use OAuth scopes?",
+   "How does Notion's access model work?"
+  ],
+  "description": "Notion centralizes notes, docs, wikis, and tasks in a unified workspace, letting teams build custom workflows for collaboration and knowledge management"
+ },
+ {
+  "slug": "linear",
+  "name": "Linear",
+  "tools": 48,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Linear is a streamlined issue tracking and project planning tool for modern teams, featuring fast workflows, keyboard shortcuts, and GitHub integrations"
+ },
+ {
+  "slug": "jira",
+  "name": "Jira",
+  "tools": 119,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key",
+   "S2S_OAUTH2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Jira?",
+   "What is the difference between JQL GET, JQL POST, and Search Issues?"
+  ],
+  "description": "A tool for bug tracking, issue tracking, and agile project management."
+ },
+ {
+  "slug": "confluence",
+  "name": "Confluence",
+  "tools": 70,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key",
+   "S2S_OAUTH2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Confluence?"
+  ],
+  "description": "A tool for team collaboration and knowledge management."
+ },
+ {
+  "slug": "asana",
+  "name": "Asana",
+  "tools": 157,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Asana?"
+  ],
+  "description": "Tool to help teams organize, track, and manage their work."
+ },
+ {
+  "slug": "trello",
+  "name": "Trello",
+  "tools": 331,
+  "managed": "available",
+  "schemes": [
+   "OAuth1"
+  ],
+  "faq": [],
+  "description": "A web-based, kanban-style, list-making application."
+ },
+ {
+  "slug": "clickup",
+  "name": "ClickUp",
+  "tools": 165,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "ClickUp unifies tasks, docs, goals, and chat in a single platform, allowing teams to plan, organize, and collaborate across projects with customizable workflows"
+ },
+ {
+  "slug": "monday",
+  "name": "Monday",
+  "tools": 126,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "Why do I see \"App is not installed\" when connecting Monday?",
+   "How do I set up custom OAuth credentials for Monday.com?",
+   "How do Monday scopes work?"
+  ],
+  "description": "monday.com is a customizable work management platform for project planning, collaboration, and automation, supporting agile, sales, marketing, and more"
+ },
+ {
+  "slug": "airtable",
+  "name": "Airtable",
+  "tools": 28,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Airtable?"
+  ],
+  "description": "Airtable merges spreadsheet functionality with database power, enabling teams to organize projects, track tasks, and collaborate through customizable views, automation, and integrations for data management"
+ },
+ {
+  "slug": "hubspot",
+  "name": "HubSpot",
+  "tools": 324,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [
+   "Why do users see a \"Connecting an unverified app\" warning?",
+   "Should I use Composio-managed auth or my own HubSpot OAuth app?",
+   "How do scopes work in HubSpot?",
+   "What is the recommended custom HubSpot OAuth scope setup?",
+   "What are common HubSpot troubleshooting checks?"
+  ],
+  "description": "HubSpot is an inbound marketing, sales, and customer service platform integrating CRM, email automation, and analytics to facilitate lead nurturing and seamless customer experiences"
+ },
+ {
+  "slug": "salesforce",
+  "name": "Salesforce",
+  "tools": 324,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "S2S_OAUTH2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Salesforce?"
+  ],
+  "description": "Salesforce is a leading CRM platform integrating sales, service, marketing, and analytics to build customer relationships and drive business growth"
+ },
+ {
+  "slug": "pipedrive",
+  "name": "Pipedrive",
+  "tools": 406,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Pipedrive?",
+   "Why am I seeing \"App not found\" when connecting Pipedrive?",
+   "How should I connect with my own Pipedrive OAuth app?"
+  ],
+  "description": "Pipedrive is a sales management tool built around pipeline visualization, lead tracking, activity reminders, and automation to keep deals progressing"
+ },
+ {
+  "slug": "zoho",
+  "name": "Zoho",
+  "tools": 102,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Zoho CRM?"
+  ],
+  "description": "Zoho is a suite of cloud applications including CRM, email marketing, and collaboration tools, enabling businesses to automate and scale operations"
+ },
+ {
+  "slug": "zendesk",
+  "name": "Zendesk",
+  "tools": 457,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Zendesk?"
+  ],
+  "description": "Zendesk provides customer support software with ticketing, live chat, and knowledge base features, enabling efficient helpdesk operations and customer engagement"
+ },
+ {
+  "slug": "intercom",
+  "name": "Intercom",
+  "tools": 133,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Intercom provides live chat, messaging, and customer engagement tools, enabling businesses to drive conversions, handle support, and personalize communication at scale"
+ },
+ {
+  "slug": "linkedin",
+  "name": "LinkedIn",
+  "tools": 25,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for LinkedIn?",
+   "Why am I getting 429 rate limit errors on LinkedIn?",
+   "Why can't I use certain LinkedIn scope combinations?"
+  ],
+  "description": "LinkedIn is a professional networking platform enabling job seekers, companies, and thought leaders to connect, share content, and discover business opportunities"
+ },
+ {
+  "slug": "twitter",
+  "name": "Twitter",
+  "tools": 84,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "Why are Composio managed credentials no longer available for Twitter?",
+   "Why am I getting rate limit or \"UsageCapExceeded\" errors on Twitter?",
+   "Why can't I access certain Twitter API endpoints?",
+   "Why am I getting 403 errors on Twitter API calls?",
+   "What length limits apply to Twitter/X posts?"
+  ],
+  "description": "Twitter, Inc. was an American social media company based in San Francisco, California, which operated and was named for named for its flagship social media network prior to its rebrand as X."
+ },
+ {
+  "slug": "instagram",
+  "name": "Instagram",
+  "tools": 40,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Instagram is a social media platform for sharing photos, videos, and stories. Only supports Instagram Business and Creator accounts, not Instagram Personal accounts."
+ },
+ {
+  "slug": "facebook",
+  "name": "Facebook",
+  "tools": 63,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Meta (Facebook)?"
+  ],
+  "description": "Facebook is a social media and advertising platform used by individuals and businesses to connect, share content, and promote products or services. Only supports Facebook Pages, not Facebook Personal accounts."
+ },
+ {
+  "slug": "reddit",
+  "name": "Reddit",
+  "tools": 36,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Reddit is a social news platform with user-driven communities (subreddits), offering content sharing, discussions, and viral marketing opportunities for brands"
+ },
+ {
+  "slug": "tiktok",
+  "name": "Tiktok",
+  "tools": 9,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "TikTok short-form video platform + creation tools + social sharing"
+ },
+ {
+  "slug": "pinterest",
+  "name": "Pinterest",
+  "tools": 27,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Pinterest is a visual discovery platform for finding ideas like recipes, home and style inspiration, and more."
+ },
+ {
+  "slug": "spotify",
+  "name": "Spotify",
+  "tools": 88,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "Why is there no default OAuth app for Spotify?"
+  ],
+  "description": "Spotify is a digital music and podcast streaming service with millions of tracks, personalized playlists, and social sharing features"
+ },
+ {
+  "slug": "zoom",
+  "name": "Zoom",
+  "tools": 105,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Zoom?"
+  ],
+  "description": "Zoom is a video conferencing and online meeting platform featuring breakout rooms, screen sharing, and integrations with various enterprise tools"
+ },
+ {
+  "slug": "calendly",
+  "name": "Calendly",
+  "tools": 57,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "Why can't I configure individual scopes for Calendly?"
+  ],
+  "description": "Calendly is an appointment scheduling tool that automates meeting invitations, availability checks, and reminders, helping individuals and teams avoid email back-and-forth"
+ },
+ {
+  "slug": "dropbox",
+  "name": "Dropbox",
+  "tools": 178,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Dropbox?"
+  ],
+  "description": "Dropbox is a cloud storage service offering file syncing, sharing, and collaboration across devices with version control and robust integrations"
+ },
+ {
+  "slug": "box",
+  "name": "Box",
+  "tools": 286,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Box is a cloud content management platform for secure file storage, sharing, collaboration, and governance."
+ },
+ {
+  "slug": "figma",
+  "name": "Figma",
+  "tools": 53,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [
+   "Why can FIGMA_EXTRACT_DESIGN_TOKENS fail when include_variables is enabled?",
+   "What can cause Figma 429s?"
+  ],
+  "description": "A collaborative interface design tool."
+ },
+ {
+  "slug": "canva",
+  "name": "Canva",
+  "tools": 53,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Canva?"
+  ],
+  "description": "Canva offers a drag-and-drop design suite for creating social media graphics, presentations, and marketing materials with prebuilt templates and a vast element library"
+ },
+ {
+  "slug": "miro",
+  "name": "Miro",
+  "tools": 85,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Miro is a collaborative online whiteboard enabling teams to brainstorm ideas, design wireframes, plan workflows, and manage projects visually"
+ },
+ {
+  "slug": "shopify",
+  "name": "Shopify",
+  "tools": 407,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "S2S_OAUTH2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Shopify?",
+   "Why am I seeing \"App not found\" when connecting Shopify?"
+  ],
+  "description": "Shopify is an e-commerce platform. This toolkit is GraphQL-first for new Admin API automations while retaining legacy REST compatibility actions for older workflows and numeric-ID interoperability"
+ },
+ {
+  "slug": "stripe",
+  "name": "Stripe",
+  "tools": 435,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Stripe?",
+   "Why is my Stripe trigger enabled but not receiving events?"
+  ],
+  "description": "Stripe offers online payment infrastructure, fraud prevention, and APIs enabling businesses to accept and manage payments globally"
+ },
+ {
+  "slug": "quickbooks",
+  "name": "QuickBooks",
+  "tools": 114,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "Why can QuickBooks OAuth show Cloudflare Error 1016 (Origin DNS error)?",
+   "Why can Claude block QuickBooks in consumer MCP sessions?",
+   "When should I use the sandbox QuickBooks API base URL for sandbox connections?"
+  ],
+  "description": "Quickbooks is a cloud-based accounting software that helps you manage your finances, track your income and expenses, and get insights into your business"
+ },
+ {
+  "slug": "xero",
+  "name": "Xero",
+  "tools": 74,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom OAuth credentials for Xero?"
+  ],
+  "description": "Xero is a cloud-based accounting software for small businesses, providing invoicing, bank reconciliation, bookkeeping, and financial reporting in real time"
+ },
+ {
+  "slug": "docusign",
+  "name": "DocuSign",
+  "tools": 338,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I create my own DocuSign OAuth app?"
+  ],
+  "description": "DocuSign provides eSignature and digital agreement solutions, enabling businesses to send, sign, track, and manage documents electronically"
+ },
+ {
+  "slug": "typeform",
+  "name": "Typeform",
+  "tools": 35,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Build beautiful, interactive forms that people love to fill out. Collect data, accept payments, and integrate with your favorite tools."
+ },
+ {
+  "slug": "mailchimp",
+  "name": "Mailchimp",
+  "tools": 277,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Mailchimp is an email marketing and automation platform providing campaign templates, audience segmentation, and performance analytics to drive engagement and conversions"
+ },
+ {
+  "slug": "klaviyo",
+  "name": "Klaviyo",
+  "tools": 233,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Klaviyo is a data-driven email and SMS marketing platform that allows e-commerce brands to deliver targeted messages, track conversions, and scale customer relationships"
+ },
+ {
+  "slug": "webflow",
+  "name": "Webflow",
+  "tools": 60,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Webflow is a no-code website design and hosting platform, letting users build responsive sites, launch online stores, and maintain content without coding"
+ },
+ {
+  "slug": "wrike",
+  "name": "Wrike",
+  "tools": 144,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Wrike is a project management and collaboration tool offering customizable workflows, Gantt charts, reporting, and resource management to boost team productivity"
+ },
+ {
+  "slug": "todoist",
+  "name": "Todoist",
+  "tools": 84,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Todoist is a task management tool allowing users to create to-do lists, set deadlines, and collaborate on projects with reminders and cross-platform syncing"
+ },
+ {
+  "slug": "attio",
+  "name": "Attio",
+  "tools": 114,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Attio is a fully customizable workspace for your team's relationships and workflows."
+ },
+ {
+  "slug": "gong",
+  "name": "Gong",
+  "tools": 58,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "BASIC"
+  ],
+  "faq": [
+   "Which IP addresses should I allowlist for Gong OAuth?"
+  ],
+  "description": "Gong is a platform for video meetings, call recording, and team collaboration."
+ },
+ {
+  "slug": "basecamp",
+  "name": "Basecamp",
+  "tools": 142,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Project management and team collaboration tool by 37signals"
+ },
+ {
+  "slug": "smartsheet",
+  "name": "Smartsheet",
+  "tools": 185,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "Bearer",
+   "Token"
+  ],
+  "faq": [],
+  "description": "Smartsheet is a collaborative work management platform for organizing projects, sheets, reports, dashboards, workflows, and teams."
+ },
+ {
+  "slug": "harvest",
+  "name": "Harvest",
+  "tools": 57,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Harvest is a time-tracking and invoicing tool designed for teams and freelancers, helping them log billable hours, manage projects, and streamline payments"
+ },
+ {
+  "slug": "gusto",
+  "name": "Gusto",
+  "tools": 192,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Modern payroll, benefits, and HR management platform for small and medium businesses"
+ },
+ {
+  "slug": "bamboohr",
+  "name": "BambooHR",
+  "tools": 42,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "BambooHR is a cloud-based human resources management system (HRMS) that helps businesses manage their employees, payroll, and benefits."
+ },
+ {
+  "slug": "workday",
+  "name": "Workday",
+  "tools": 588,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Workday is a cloud-based enterprise resource planning (ERP) software that provides comprehensive solutions for human capital management, financial management, and analytics"
+ },
+ {
+  "slug": "servicenow",
+  "name": "ServiceNow",
+  "tools": 171,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "BASIC",
+   "S2S_OAUTH2"
+  ],
+  "faq": [],
+  "description": "ServiceNow is a cloud-based enterprise platform that helps organizations automate and manage digital workflows across IT, HR, customer service, and operations."
+ },
+ {
+  "slug": "pagerduty",
+  "name": "PagerDuty",
+  "tools": 368,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "PagerDuty helps you proactively manage your digital operations by collecting data signals from anywhere, interpreting those signals using machine learning, automatically engaging the right people, and accelerating resolution and learning."
+ },
+ {
+  "slug": "sentry",
+  "name": "Sentry",
+  "tools": 211,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Integrate Sentry to manage your error tracking and monitoring."
+ },
+ {
+  "slug": "datadog",
+  "name": "Datadog",
+  "tools": 249,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "Bearer",
+   "Token",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Datadog offers monitoring, observability, and security for cloud-scale applications, unifying metrics, logs, and traces to help teams detect issues and optimize performance"
+ },
+ {
+  "slug": "vercel",
+  "name": "Vercel",
+  "tools": 160,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Vercel is a platform for frontend frameworks and static sites, enabling developers to host websites and web services that deploy instantly, scale automatically, and require minimal configuration."
+ },
+ {
+  "slug": "supabase",
+  "name": "Supabase",
+  "tools": 133,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Supabase is an open-source backend-as-a-service providing a Postgres database, authentication, storage, and real-time subscription APIs for building modern applications"
+ },
+ {
+  "slug": "twitch",
+  "name": "Twitch",
+  "tools": 131,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Twitch is a live streaming platform popular with gamers, creators, and communities, offering real-time interaction and monetization through subscriptions and donations"
+ },
+ {
+  "slug": "snapchat",
+  "name": "Snapchat",
+  "tools": 144,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Snapchat Marketing API and Ads Manager integration for creating and managing ad campaigns, analyzing performance metrics, and accessing business accounts."
+ },
+ {
+  "slug": "wix",
+  "name": "Wix",
+  "tools": 146,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Wix is a cloud-based web development platform that allows users to create HTML5 websites and mobile sites through drag-and-drop tools. The Wix API provides programmatic access to manage sites, products, orders, and other resources."
+ },
+ {
+  "slug": "eventbrite",
+  "name": "Eventbrite",
+  "tools": 95,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Eventbrite enables organizers to plan, promote, and manage events, selling tickets and providing attendee tools for conferences, concerts, and gatherings"
+ },
+ {
+  "slug": "googleads",
+  "name": "Google Ads",
+  "tools": 78,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Google Ads, is an online advertising platform developed by Google, where advertisers bid to display brief advertisements, service offerings, product listings, and videos to web users."
+ },
+ {
+  "slug": "linkedin_ads",
+  "name": "Linkedin Ads",
+  "tools": 28,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "LinkedIn Marketing and Advertising API for managing ad campaigns, analytics, and organization social content"
+ },
+ {
+  "slug": "paypal",
+  "name": "Paypal",
+  "tools": 78,
+  "managed": "not_available",
+  "schemes": [
+   "S2S_OAUTH2"
+  ],
+  "faq": [],
+  "description": "Online payment system that allows money transfers and serves as an electronic alternative to traditional payment methods"
+ },
+ {
+  "slug": "square",
+  "name": "Square",
+  "tools": 122,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Square provides payment processing, POS systems, invoicing, and e-commerce tools, enabling sellers to accept card payments and manage their business"
+ },
+ {
+  "slug": "brex",
+  "name": "Brex",
+  "tools": 84,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Brex provides corporate credit cards, spend management, and financial tools tailored for startups and tech businesses to optimize cash flow, accounting, and growth"
+ },
+ {
+  "slug": "ramp",
+  "name": "Ramp",
+  "tools": 111,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Ramp is a platform that helps you manage your finances, track your income and expenses, and get insights into your business"
+ },
+ {
+  "slug": "notion_mcp",
+  "name": "Notion MCP",
+  "tools": 42,
+  "managed": "not_available",
+  "schemes": [
+   "DCR_OAUTH"
+  ],
+  "faq": [],
+  "description": "Notion MCP gives agents authenticated read and write access to pages, databases, workspace search, tasks, documentation, and reporting workflows."
+ },
+ {
+  "slug": "dialpad",
+  "name": "Dialpad",
+  "tools": 192,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Dialpad is a cloud-based business phone system and contact center platform that enables voice, video, messages and meetings across your existing devices"
+ },
+ {
+  "slug": "aircall",
+  "name": "Aircall",
+  "tools": 48,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "BASIC"
+  ],
+  "faq": [],
+  "description": "Aircall is a cloud-based phone and call-center platform. This toolkit manages users, teams, phone numbers, calls, contacts, and tags on a single Aircall company account via the Public API."
+ },
+ {
+  "slug": "whatsapp",
+  "name": "WhatsApp",
+  "tools": 58,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [
+   "Why isn't my WhatsApp message being delivered?",
+   "Can I use a personal WhatsApp account with the WhatsApp toolkit?",
+   "What is a WABA ID?"
+  ],
+  "description": "Enables interaction with customers through the WhatsApp Business API for messaging and automation. Only supports WhatsApp Business accounts, not WhatsApp Personal accounts."
+ },
+ {
+  "slug": "google_analytics",
+  "name": "Google Analytics",
+  "tools": 69,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Google Analytics tracks and reports website traffic, user behavior, and conversion data, enabling marketers to optimize online performance and customer journeys"
+ },
+ {
+  "slug": "googlebigquery",
+  "name": "Google BigQuery",
+  "tools": 63,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "GOOGLE_SERVICE_ACCOUNT"
+  ],
+  "faq": [
+   "Why do I see \"This app is blocked\" when connecting Google BigQuery?"
+  ],
+  "description": "Google BigQuery is a fully managed data warehouse for large-scale data analytics, offering fast SQL queries and machine learning capabilities on massive datasets"
+ },
+ {
+  "slug": "google_maps",
+  "name": "Google Maps",
+  "tools": null,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Maps?",
+   "Why am I seeing \"App is blocked\" when connecting Google Maps?",
+   "Why am I getting \"Google Maps API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?",
+   "What is required for the Maps Embed API?"
+  ],
+  "description": "Integrate Google Maps to access location data, geocoding, directions, and mapping services in your application. Instant is available on the latest version. Check each tool for support and pricing."
+ },
+ {
+  "slug": "lever",
+  "name": "Lever",
+  "tools": 64,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Lever is an applicant tracking system combining sourcing, CRM functionalities, and analytics, helping companies scale recruiting efforts with a collaborative approach"
+ },
+ {
+  "slug": "greenhouse",
+  "name": "Greenhouse",
+  "tools": 134,
+  "managed": "available",
+  "schemes": [
+   "OAuth2",
+   "S2S_OAUTH2"
+  ],
+  "faq": [],
+  "description": "Applicant tracking and recruiting software to optimize your entire recruiting process"
+ },
+ {
+  "slug": "googlemeet",
+  "name": "Google Meet",
+  "tools": 25,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Meet?",
+   "Why am I seeing \"App is blocked\" when connecting Google Meet?",
+   "Why am I getting \"Google Meet API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?",
+   "Why am I getting \"Quota Exhausted\" or \"rate limit exhausted\"?",
+   "Why do Google Meet calls return 403 on conference records or artifacts?"
+  ],
+  "description": "Google Meet is a secure video conferencing platform that integrates with Google Workspace, facilitating remote meetings, screen sharing, and chat"
+ },
+ {
+  "slug": "googletasks",
+  "name": "Google Tasks",
+  "tools": 18,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Tasks?",
+   "Why am I seeing \"App is blocked\" when connecting Google Tasks?",
+   "Why am I getting \"Google Tasks API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?",
+   "Why am I getting \"Quota Exhausted\" or \"rate limit exhausted\"?"
+  ],
+  "description": "Google Tasks provides a simple to-do list and task management system integrated into Gmail and Google Calendar for quick and easy tracking"
+ },
+ {
+  "slug": "metaads",
+  "name": "Meta Ads",
+  "tools": 93,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2",
+   "API",
+   "Key"
+  ],
+  "faq": [],
+  "description": "Create, edit and get insights from ads across Meta technologies, including Facebook, Instagram, Messenger, WhatsApp and more."
+ },
+ {
+  "slug": "threads",
+  "name": "Threads",
+  "tools": 24,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Threads is Meta's social network for publishing posts, managing replies, discovering public content, and analyzing profile and post performance."
+ },
+ {
+  "slug": "googleslides",
+  "name": "Google Slides",
+  "tools": 8,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Slides?",
+   "Why am I seeing \"App is blocked\" when connecting Google Slides?",
+   "Why am I getting \"Google Slides API has not been used in project\" error?",
+   "Why am I getting \"Error 400: invalid_scope\"?",
+   "Why does the OAuth consent screen show \"Composio\" instead of my app?",
+   "Why am I getting 401 errors on tool calls?",
+   "Why am I getting \"Quota Exhausted\" or \"rate limit exhausted\"?"
+  ],
+  "description": "Google Slides is a cloud-based presentation editor with real-time collaboration, template gallery, and integration with other Google Workspace apps"
+ },
+ {
+  "slug": "googlephotos",
+  "name": "Google Photos",
+  "tools": 14,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Google Photos is a cloud-based photo storage and organization service offering automatic backups, AI-assisted search, and shared albums for personal and collaborative media management"
+ },
+ {
+  "slug": "google_search_console",
+  "name": "Google Search Console",
+  "tools": 9,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Google Search Console provides tools to monitor, maintain, and troubleshoot your site's presence in Google Search results."
+ },
+ {
+  "slug": "googlecontacts",
+  "name": "Googlecontacts",
+  "tools": 24,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Access and manage Google Contacts data via the Google People API"
+ },
+ {
+  "slug": "google_admin",
+  "name": "Google Admin",
+  "tools": 14,
+  "managed": "not_available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [
+   "How do I set up custom Google OAuth credentials for Google Admin?"
+  ],
+  "description": "Google Admin Console for managing Google Workspace users, groups, and organizational units."
+ },
+ {
+  "slug": "tiktok_ads",
+  "name": "TikTok Ads",
+  "tools": 403,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Use TikTok API for Business actions to read advertisers, campaigns, ad groups, ads, audiences, creatives, catalogs, Business Centers, balances, billing, and transactions; manage advertiser settings, Asset Groups, disabled-by-default Smart+ "
+ },
+ {
+  "slug": "pinterest_ads",
+  "name": "Pinterest Ads",
+  "tools": 10,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Pinterest Ads API for managing advertising accounts, campaigns, ad groups, ads, targeting, and reporting."
+ },
+ {
+  "slug": "reddit_ads",
+  "name": "Reddit Ads",
+  "tools": 83,
+  "managed": "available",
+  "schemes": [
+   "OAuth2"
+  ],
+  "faq": [],
+  "description": "Reddit Ads API for managing advertising campaigns, conversions, and account data on Reddit."
+ }
+]

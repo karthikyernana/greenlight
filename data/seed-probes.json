@@ -1,0 +1,424 @@
+{
+ "github": {
+  "composio": {
+   "managed": "available",
+   "slug": "github",
+   "schemes": [
+    "OAuth2"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/github",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://github.com/login/oauth/authorize",
+    "result": "HTTP 302 → github.com/login — redirects an unknown client to a sign-in/error page",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ]
+ },
+ "notion": {
+  "composio": {
+   "managed": "available",
+   "slug": "notion",
+   "schemes": [
+    "OAuth2",
+    "API Key"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/notion",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "OAuth/OIDC discovery",
+    "url": "https://mcp.notion.com/.well-known/oauth-authorization-server",
+    "result": "Discovery document found. authorize: https://mcp.notion.com/authorize · PKCE: S256 · dynamic client registration endpoint advertised · 2 scopes advertised",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://api.notion.com/v1/oauth/authorize",
+    "result": "HTTP 302 → app.notion.com/install-integration — redirects an unknown client to a sign-in/error page",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ],
+  "disc": {
+   "issuer": "https://mcp.notion.com",
+   "authorization_endpoint": "https://mcp.notion.com/authorize",
+   "token_endpoint": "https://mcp.notion.com/token",
+   "scopes": [
+    "default",
+    "ema_issuer:manage"
+   ],
+   "pkce": [
+    "S256"
+   ],
+   "registration": "https://mcp.notion.com/register",
+   "url": "https://mcp.notion.com/.well-known/oauth-authorization-server"
+  }
+ },
+ "slack": {
+  "composio": {
+   "managed": "available",
+   "slug": "slack",
+   "schemes": [
+    "OAuth2"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/slack",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "OAuth/OIDC discovery",
+    "url": "https://slack.com/.well-known/openid-configuration",
+    "result": "Discovery document found. authorize: https://slack.com/openid/connect/authorize · 3 scopes advertised",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://slack.com/oauth/v2/authorize",
+    "result": "HTTP 200 — endpoint is live",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ],
+  "disc": {
+   "issuer": "https://slack.com",
+   "authorization_endpoint": "https://slack.com/openid/connect/authorize",
+   "token_endpoint": "https://slack.com/api/openid.connect.token",
+   "scopes": [
+    "openid",
+    "profile",
+    "email"
+   ],
+   "url": "https://slack.com/.well-known/openid-configuration"
+  }
+ },
+ "hubspot": {
+  "composio": {
+   "managed": "available",
+   "slug": "hubspot",
+   "schemes": [
+    "OAuth2",
+    "API Key"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/hubspot",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://app.hubspot.com/oauth/authorize",
+    "result": "HTTP 200 — endpoint is live",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ]
+ },
+ "outlook": {
+  "composio": {
+   "managed": "available",
+   "slug": "outlook",
+   "schemes": [
+    "OAuth2",
+    "S2S_OAUTH2"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/outlook",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "OAuth/OIDC discovery",
+    "url": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
+    "result": "Discovery document found. authorize: https://login.microsoftonline.com/common/oauth2/v2.0/authorize · 4 scopes advertised",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+    "result": "HTTP 200 — endpoint is live",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ],
+  "disc": {
+   "issuer": "https://login.microsoftonline.com/{tenantid}/v2.0",
+   "authorization_endpoint": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+   "token_endpoint": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+   "scopes": [
+    "openid",
+    "profile",
+    "email",
+    "offline_access"
+   ],
+   "url": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration"
+  }
+ },
+ "gmail": {
+  "composio": {
+   "managed": "available",
+   "slug": "gmail",
+   "schemes": [
+    "OAuth2"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/gmail",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "OAuth/OIDC discovery",
+    "url": "https://accounts.google.com/.well-known/openid-configuration",
+    "result": "Discovery document found. authorize: https://accounts.google.com/o/oauth2/v2/auth · PKCE: plain/S256 · 3 scopes advertised",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://accounts.google.com/o/oauth2/v2/auth",
+    "result": "HTTP 302 → accounts.google.com/signin/oauth/error (error param present) — redirects an unknown client to a sign-in/error page",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ],
+  "disc": {
+   "issuer": "https://accounts.google.com",
+   "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+   "token_endpoint": "https://oauth2.googleapis.com/token",
+   "scopes": [
+    "openid",
+    "email",
+    "profile"
+   ],
+   "pkce": [
+    "plain",
+    "S256"
+   ],
+   "url": "https://accounts.google.com/.well-known/openid-configuration"
+  }
+ },
+ "salesforce": {
+  "composio": {
+   "managed": "available",
+   "slug": "salesforce",
+   "schemes": [
+    "OAuth2",
+    "S2S_OAUTH2"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/salesforce",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "OAuth/OIDC discovery",
+    "url": "https://login.salesforce.com/.well-known/openid-configuration",
+    "result": "Discovery document found. authorize: https://login.salesforce.com/services/oauth2/authorize · PKCE: S256 · dynamic client registration endpoint advertised · 39 scopes advertised",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://login.salesforce.com/services/oauth2/authorize",
+    "result": "HTTP 400 — rejects unknown client: “invalid_client_id&error_description=client%20identifier%20invalid error=invalid_client_id&erro”",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ],
+  "disc": {
+   "issuer": "https://login.salesforce.com",
+   "authorization_endpoint": "https://login.salesforce.com/services/oauth2/authorize",
+   "token_endpoint": "https://login.salesforce.com/services/oauth2/token",
+   "scopes": [
+    "cdp_ingest_api",
+    "custom_permissions",
+    "cdp_segment_api",
+    "content",
+    "cdp_api",
+    "chatbot_api",
+    "cdp_identityresolution_api",
+    "interaction_api",
+    "wave_api",
+    "web",
+    "cdp_calculated_insight_api",
+    "einstein_gpt_api",
+    "offline_access",
+    "id",
+    "api",
+    "data_cloud_user_claims",
+    "eclair_api",
+    "email",
+    "pardot_api",
+    "lightning",
+    "visualforce",
+    "cdp_query_api",
+    "sfap_api",
+    "address",
+    "openid",
+    "semantic_layer_api",
+    "profile",
+    "cmdb_discovery_api",
+    "scrt_api",
+    "cdp_profile_api",
+    "refresh_token",
+    "phone",
+    "user_registration_api",
+    "pwdless_login_api",
+    "chatter_api",
+    "mcp_api",
+    "a2a_api",
+    "full",
+    "forgot_password"
+   ],
+   "pkce": [
+    "S256"
+   ],
+   "registration": "https://login.salesforce.com/services/oauth2/register",
+   "url": "https://login.salesforce.com/.well-known/openid-configuration"
+  }
+ },
+ "instagram": {
+  "composio": {
+   "managed": "available",
+   "slug": "instagram",
+   "schemes": [
+    "OAuth2"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/instagram",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "OAuth/OIDC discovery",
+    "url": "https://www.facebook.com/.well-known/openid-configuration",
+    "result": "Discovery document found. authorize: https://facebook.com/dialog/oauth/",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://www.instagram.com/oauth/authorize",
+    "result": "HTTP 200 — endpoint is live",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ],
+  "disc": {
+   "issuer": "https://www.facebook.com",
+   "authorization_endpoint": "https://facebook.com/dialog/oauth/",
+   "url": "https://www.facebook.com/.well-known/openid-configuration"
+  }
+ },
+ "linkedin": {
+  "composio": {
+   "managed": "available",
+   "slug": "linkedin",
+   "schemes": [
+    "OAuth2"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/linkedin",
+    "result": "Toolkit page says “Composio-managed OAuth available”",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "OAuth/OIDC discovery",
+    "url": "https://www.linkedin.com/oauth/.well-known/openid-configuration",
+    "result": "Discovery document found. authorize: https://www.linkedin.com/oauth/v2/authorization · 3 scopes advertised",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://www.linkedin.com/oauth/v2/authorization",
+    "result": "HTTP 200 — rejects unknown client: “client_id is invalid greenlight-probe-000 !DOCTYPE html”",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ],
+  "disc": {
+   "issuer": "https://www.linkedin.com/oauth",
+   "authorization_endpoint": "https://www.linkedin.com/oauth/v2/authorization",
+   "token_endpoint": "https://www.linkedin.com/oauth/v2/accessToken",
+   "scopes": [
+    "openid",
+    "profile",
+    "email"
+   ],
+   "url": "https://www.linkedin.com/oauth/.well-known/openid-configuration"
+  }
+ },
+ "twitter": {
+  "composio": {
+   "managed": "not_available",
+   "slug": "twitter",
+   "schemes": [
+    "OAuth2"
+   ]
+  },
+  "probes": [
+   {
+    "label": "Composio toolkit directory",
+    "url": "https://docs.composio.dev/toolkits/twitter",
+    "result": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+    "ok": true,
+    "at": "2026-10-30"
+   },
+   {
+    "label": "Authorize endpoint (fake client)",
+    "url": "https://x.com/i/oauth2/authorize",
+    "result": "HTTP 200 — endpoint is live",
+    "ok": true,
+    "at": "2026-10-30"
+   }
+  ]
+ }
+}
