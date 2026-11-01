@@ -8,10 +8,12 @@ import { GET as guideGET } from "../app/api/guide/[slug]/route";
 import { GET as statusGET } from "../app/api/status/route";
 import { GET as traceGET } from "../app/api/trace/[id]/route";
 import { GET as storeGET } from "../app/api/store/route";
+import { GET as checkGET } from "../app/api/check/route";
 import { _setBackend, type Backend } from "../lib/store";
 
 process.env.GREENLIGHT_FAKE_PIPELINE = "1";
 process.env.GREENLIGHT_FAKE_STEP_MS = "1";
+process.env.GREENLIGHT_GATE_ALLOW = "^(acme|broken|cooldown|stored|blob|trace)";
 for (const k of ["LLM_BASE_URL", "LLM_API_KEY", "LLM_MODEL", "GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY", "BLOB_READ_WRITE_TOKEN"]) delete process.env[k];
 
 function blobLike(): { b: Backend; m: Map<string, string> } {
@@ -129,4 +131,39 @@ test("GET /api/trace: in-memory trace 200, unknown 404, unsafe id 404", async ()
   assert.equal((await traceGET(new Request("http://t"), ctx({ id: tid }))).status, 200);
   assert.equal((await traceGET(new Request("http://t"), ctx({ id: "zzzzzz" }))).status, 404);
   assert.equal((await traceGET(new Request("http://t"), ctx({ id: "../etc" }))).status, 404);
+});
+
+/* ───────── input gate on the server routes ───────── */
+const check = async (q: string) => { const r = await checkGET(new Request(`http://t/api/check?q=${encodeURIComponent(q)}`)); return { status: r.status, body: await r.json() }; };
+
+test("GET /api/check: gibberish → 422 with a clear message and suggestions, in well under 2 s", async () => {
+  const t0 = Date.now();
+  const { status, body } = await check("asdfgh");
+  assert.equal(status, 422);
+  assert.equal(body.ok, false);
+  assert.equal(body.code, "gibberish");
+  assert.equal(body.message, `Couldn't find an app called "asdfgh". Try a product name or its website.`);
+  assert.ok(Array.isArray(body.suggestions) && body.suggestions.length > 0);
+  assert.ok(Date.now() - t0 < 2000);
+});
+
+test("GET /api/check: library app, directory app (Xero), and a need sentence resolve without a model", async () => {
+  const g = await check("Gmail");
+  assert.equal(g.status, 200); assert.equal(g.body.href, "/guide/gmail");
+  const x = await check("Xero");
+  assert.equal(x.body.ok, true); assert.equal(x.body.via, "directory"); assert.match(x.body.href, /^\/guide\/xero\?q=Xero/);
+  const s = await check("agent that triages my users' Gmail and drafts replies");
+  assert.equal(s.body.via, "sentence"); assert.match(s.body.href, /^\/guide\/gmail\?need=/);
+});
+
+test("POST /api/generate enforces the gate too: gibberish never reaches the pipeline", async () => {
+  const t0 = Date.now();
+  const ev = await gen({ q: "asdfgh", slug: "asdfgh" });
+  assert.deepEqual(types(ev), ["error"]);
+  assert.equal(ev[0].code, "not_an_app");
+  assert.match(ev[0].message, /Couldn't find an app called "asdfgh"/);
+  assert.ok(ev[0].suggestions.length > 0);
+  assert.ok(Date.now() - t0 < 2000);
+  const ev2 = await gen({ q: "qwerty qwerty" });
+  assert.equal(ev2[0].code, "not_an_app");
 });

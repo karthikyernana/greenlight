@@ -1,13 +1,14 @@
 import type { z } from "zod";
 
 /* Model providers for JSON-only calls. No tool calling, no provider-side search: retrieval is ours (lib/retrieval.ts).
-   Order:
-   1. LLM_BASE_URL + LLM_API_KEY + LLM_MODEL   any OpenAI-compatible chat-completions endpoint (primary; e.g. a DeepSeek model).
+   Default order (MODEL_ORDER overrides, e.g. "llm,gemini,groq"):
+   1. GEMINI_API_KEY                            Gemini generateContent, JSON mime type.
+   2. GROQ_API_KEY                              Groq (OpenAI-compatible).
+   3. LLM_BASE_URL + LLM_API_KEY + LLM_MODEL   any OpenAI-compatible chat-completions endpoint (e.g. the JoinGonka gateway).
       LLM_MODEL may be a comma list; later models are fallbacks.
-   2. GEMINI_API_KEY                            Gemini generateContent, JSON mime type.
-   3. GROQ_API_KEY                              Groq (OpenAI-compatible).
    4. OPENROUTER_API_KEY                        OpenRouter free models.
-   Each call: timeout, retry on 429/5xx with backoff, then the next model, then the next provider.
+   Each call: timeout, retry on 429/5xx with backoff, models hedged within a provider, providers staggered, with
+   per-run health memory demoting slow or failing providers.
    Output: <think> blocks and reasoning_content are ignored, the first balanced JSON object is parsed, zod validates,
    and one repair round is sent back to the model with the validation errors. */
 
@@ -35,7 +36,18 @@ export class RunBudget {
     this.used += r.prompt + r.completion;
     this.calls.push(r);
   }
+  /** Per-run provider health: timeouts, outright failures, races lost to a provider that started later. */
+  health = new Map<string, ProviderHealth>();
+  healthOf(id: string): ProviderHealth {
+    let h = this.health.get(id);
+    if (!h) this.health.set(id, (h = { timeouts: 0, fails: 0, slow: 0 }));
+    return h;
+  }
+  demoted(id: string) { const h = this.health.get(id); return !!h && (h.timeouts > 0 || h.fails > 0 || h.slow > 0); }
+  /** Configured order with demoted providers moved to the back (stable). */
+  order<P extends { id: string }>(ps: P[]): P[] { return [...ps.filter((p) => !this.demoted(p.id)), ...ps.filter((p) => this.demoted(p.id))]; }
 }
+export type ProviderHealth = { timeouts: number; fails: number; slow: number };
 
 type Provider = {
   id: string; label: string; models: string[];
@@ -123,26 +135,66 @@ export const GEMINI_DEFAULT = "gemini-2.5-flash,gemini-flash-latest";
 /* Groq models listed by GET /models on 2026-11-01. Each has its own tokens-per-minute limit on the free tier,
    so the 20B and Qwen models are real fallbacks when the 120B hits its TPM cap. */
 export const GROQ_DEFAULT = "openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3.8-27b";
-export const FALLBACK_ORDER = ["LLM_* (LLM_BASE_URL + LLM_API_KEY + LLM_MODEL)", "GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY"];
+/* Provider order. Default Gemini → Groq → LLM_* → OpenRouter: the LLM_* gateway (JoinGonka in production) is
+   the slowest (a Xero run spent 281 s there before Gemini answered in 18 s), so it is a fallback, not the primary.
+   MODEL_ORDER overrides it ("llm,gemini,groq"); configured providers it leaves out are still tried, last. */
+export const PROVIDER_IDS = ["gemini", "groq", "llm", "openrouter"] as const;
+export type ProviderId = (typeof PROVIDER_IDS)[number];
+export const DEFAULT_ORDER: ProviderId[] = ["gemini", "groq", "llm", "openrouter"];
+const ORDER_ALIAS: Record<string, ProviderId> = { gemini: "gemini", google: "gemini", groq: "groq", llm: "llm", compat: "llm", openai: "llm", gateway: "llm", gonka: "llm", openrouter: "openrouter", or: "openrouter" };
+const ENV_OF: Record<ProviderId, string> = { gemini: "GEMINI_API_KEY", groq: "GROQ_API_KEY", llm: "LLM_* (LLM_BASE_URL + LLM_API_KEY + LLM_MODEL)", openrouter: "OPENROUTER_API_KEY" };
+
+export function modelOrder(raw = env("MODEL_ORDER")): { order: ProviderId[]; from: "MODEL_ORDER" | "default"; ignored: string[] } {
+  if (!raw) return { order: [...DEFAULT_ORDER], from: "default", ignored: [] };
+  const out: ProviderId[] = [];
+  const ignored: string[] = [];
+  for (const t of list(raw.toLowerCase())) {
+    const id = ORDER_ALIAS[t.replace(/[^a-z]/g, "")];
+    if (!id) ignored.push(t);
+    else if (!out.includes(id)) out.push(id);
+  }
+  if (!out.length) return { order: [...DEFAULT_ORDER], from: "default", ignored };
+  for (const id of DEFAULT_ORDER) if (!out.includes(id)) out.push(id);
+  return { order: out, from: "MODEL_ORDER", ignored };
+}
+
+/** How long a provider gets before the next PROVIDER starts in parallel. The gateway is slow, so it gets less. */
+export function providerHedgeMs(p: { id: string }): number {
+  const v = Number(env(p.id === "llm" ? "LLM_PROVIDER_HEDGE_MS" : "PROVIDER_HEDGE_MS"));
+  return v > 0 ? v : p.id === "llm" ? 20_000 : 40_000;
+}
+/** How long a model gets before the next MODEL of the same provider starts. */
+export function modelHedgeMs(p: { id: string }): number {
+  const v = Number(env(p.id === "llm" ? "LLM_HEDGE_MS" : "MODEL_HEDGE_MS"));
+  return v > 0 ? v : p.id === "llm" ? 10_000 : 25_000;
+}
 
 export function providers(): Provider[] {
-  const out: Provider[] = [];
-  if (env("LLM_BASE_URL") && env("LLM_API_KEY") && env("LLM_MODEL")) out.push(openAICompat("llm", "OpenAI-compatible (LLM_*)", env("LLM_BASE_URL"), env("LLM_API_KEY"), list(env("LLM_MODEL"))));
-  if (env("GEMINI_API_KEY")) out.push(gemini(env("GEMINI_API_KEY"), list(env("GEMINI_MODEL") || GEMINI_DEFAULT)));
-  if (env("GROQ_API_KEY")) out.push(openAICompat("groq", "Groq", "https://api.groq.com/openai/v1", env("GROQ_API_KEY"), list(env("GROQ_MODEL") || GROQ_DEFAULT)));
-  if (env("OPENROUTER_API_KEY")) out.push(openAICompat("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", env("OPENROUTER_API_KEY"), list(env("OPENROUTER_MODEL") || "openai/gpt-oss-20b:free,deepseek/deepseek-chat-v3.1:free"), { "x-title": "Greenlight" }));
-  return out;
+  const make: Record<ProviderId, () => Provider | null> = {
+    llm: () => (env("LLM_BASE_URL") && env("LLM_API_KEY") && env("LLM_MODEL") ? openAICompat("llm", "OpenAI-compatible (LLM_*)", env("LLM_BASE_URL"), env("LLM_API_KEY"), list(env("LLM_MODEL"))) : null),
+    gemini: () => (env("GEMINI_API_KEY") ? gemini(env("GEMINI_API_KEY"), list(env("GEMINI_MODEL") || GEMINI_DEFAULT)) : null),
+    groq: () => (env("GROQ_API_KEY") ? openAICompat("groq", "Groq", "https://api.groq.com/openai/v1", env("GROQ_API_KEY"), list(env("GROQ_MODEL") || GROQ_DEFAULT)) : null),
+    openrouter: () => (env("OPENROUTER_API_KEY") ? openAICompat("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", env("OPENROUTER_API_KEY"), list(env("OPENROUTER_MODEL") || "openai/gpt-oss-20b:free,deepseek/deepseek-chat-v3.1:free"), { "x-title": "Greenlight" }) : null),
+  };
+  return modelOrder().order.map((id) => make[id]()).filter((p): p is Provider => !!p);
 }
 
 export function providerStatus() {
   const ps = providers();
+  const mo = modelOrder();
   const host = (u: string) => { try { return new URL(u).host; } catch { return ""; } };
   return {
     primary: ps[0] ? { id: ps[0].id, label: ps[0].label, model: ps[0].models[0], host: ps[0].id === "llm" ? host(env("LLM_BASE_URL")) : undefined } : null,
     configured: ps.map((p) => ({ id: p.id, label: p.label, models: p.models })),
-    /** The order calls fall through when a provider fails (402/5xx/timeouts/invalid JSON); unset ones are skipped. */
-    fallbackOrder: FALLBACK_ORDER,
+    /** Active order of the configured providers (what a call actually tries). */
     order: ps.map((p) => p.id),
+    orderFrom: mo.from,
+    ...(mo.ignored.length ? { orderIgnored: mo.ignored } : {}),
+    defaultOrder: DEFAULT_ORDER,
+    /** Full order including unset providers (skipped), as env names. */
+    fallbackOrder: mo.order.map((id) => ENV_OF[id]),
+    hedge: Object.fromEntries(ps.map((p) => [p.id, { nextModelAfterMs: modelHedgeMs(p), nextProviderAfterMs: providerHedgeMs(p) }])),
+    health: "per run: a provider that times out, fails, or loses a race is demoted to the back for the rest of that run",
     gemini: { configured: !!env("GEMINI_API_KEY"), models: list(env("GEMINI_MODEL") || GEMINI_DEFAULT), modelFrom: env("GEMINI_MODEL") ? "GEMINI_MODEL" : "default" },
     groq: { configured: !!env("GROQ_API_KEY"), models: list(env("GROQ_MODEL") || GROQ_DEFAULT), modelFrom: env("GROQ_MODEL") ? "GROQ_MODEL" : "default" },
     missing: {
@@ -150,7 +202,7 @@ export function providerStatus() {
     },
     retrieval: "own (web search + direct fetch); no provider grounding",
     any: ps.length > 0,
-    hint: ps.length ? null : "No model configured. Set LLM_BASE_URL + LLM_API_KEY + LLM_MODEL, or GEMINI_API_KEY, or GROQ_API_KEY on the Vercel project and redeploy. Stored guides still load; probes and the Composio check run without a model.",
+    hint: ps.length ? null : "No model configured. Set GEMINI_API_KEY, GROQ_API_KEY, or LLM_BASE_URL + LLM_API_KEY + LLM_MODEL on the Vercel project and redeploy. Stored guides still load; probes and the Composio check run without a model.",
   };
 }
 
@@ -197,7 +249,11 @@ async function withRetry<T>(fn: () => Promise<T>, tries = 2): Promise<T> {
   throw last;
 }
 
-export type JsonCall<T> = { stage: string; system: string; user: string; schema: z.ZodType<T>; budget: RunBudget; timeoutMs?: number; providers?: Provider[]; hedgeMs?: number };
+export type JsonCall<T> = { stage: string; system: string; user: string; schema: z.ZodType<T>; budget: RunBudget; timeoutMs?: number; providers?: Provider[];
+  /** start the next model of the same provider after this long (default: per provider, see modelHedgeMs) */
+  hedgeMs?: number;
+  /** start the next provider after this long (default: per provider, see providerHedgeMs) */
+  providerHedgeMs?: number };
 
 /* Per-instance memory of how each model behaves (EWMA of time to a valid answer, failures count as slow).
    Models that keep answering fast move to the front of the hedge order; the configured order breaks ties. */
@@ -257,50 +313,94 @@ async function attempt<T>(c: JsonCall<T>, p: Provider, model: string, signal: Ab
   }
 }
 
+/** Is this error a real timeout (not a cancellation because another model or provider answered first)? */
+const isTimeout = (e: any) => e?.status === 408 && !/cancelled/.test(String(e?.message || ""));
+
+/** Within one provider the models are HEDGED: the first model starts; if it has not answered after `hedgeMs` or it
+    fails, the next one starts too, up to 3 in flight. First valid answer wins; the rest are cancelled. */
+async function runProvider<T>(c: JsonCall<T>, p: Provider, hedgeMs: number, signal: AbortSignal, errors: string[]): Promise<{ data: T; model: string; provider: string }> {
+  const models = orderModels([...p.models, ...((await p.discover?.()) || [])]);
+  const ctl = new AbortController();
+  const onOuter = () => ctl.abort();
+  signal.addEventListener("abort", onOuter);
+  const h = c.budget.healthOf(p.id);
+  try {
+    return await new Promise((resolve, reject) => {
+      let next = 0, running = 0, done = false, sawTimeout = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const finish = (f: () => void) => { done = true; clearTimeout(timer); f(); };
+      const launch = () => {
+        if (done || next >= models.length || signal.aborted) return;
+        const m = models[next++];
+        running++;
+        clearTimeout(timer);
+        if (next < models.length && running < 3) timer = setTimeout(launch, hedgeMs);
+        attempt(c, p, m, ctl.signal).then(
+          (r) => { if (!done) finish(() => resolve(r)); },
+          (e: any) => {
+            running--;
+            errors.push(`${p.id}:${m}: ${String(e?.message || e).slice(0, 160)}`);
+            if (isTimeout(e) && !signal.aborted) { h.timeouts++; sawTimeout = true; }
+            if (done) return;
+            if (e instanceof BudgetErr || e?.status === 401 || e?.status === 403 || signal.aborted) { finish(() => reject(e)); return; }
+            if (next < models.length) launch();
+            else if (running === 0) finish(() => reject(Object.assign(new Error(`${p.id}: all models failed`), { timeout: sawTimeout })));
+          },
+        );
+      };
+      launch();
+    });
+  } finally {
+    ctl.abort();
+    signal.removeEventListener("abort", onOuter);
+  }
+}
+
 /**
  * One validated JSON answer.
- * Within a provider the models are HEDGED: the first model starts; if it has not answered after `hedgeMs`
- * (LLM_HEDGE_MS, default 25s) or it fails, the next model starts too, up to 3 in flight. First valid answer wins,
- * the rest are cancelled. Providers are tried in order after that.
+ * Providers run in MODEL_ORDER (default Gemini → Groq → LLM_* → OpenRouter), staggered: the first provider starts;
+ * if it has not answered after its provider hedge (PROVIDER_HEDGE_MS; shorter for the slow LLM_* gateway) or it
+ * fails, the next provider starts too. First valid answer wins and the rest are cancelled.
+ * Health memory (per run, on the RunBudget): a provider that timed out, failed outright, or lost a race to a
+ * provider that started after it is demoted to the back of the order for the rest of the run.
  */
 export async function llmJson<T>(c: JsonCall<T>): Promise<{ data: T; model: string; provider: string }> {
-  const ps = c.providers || providers();
-  if (!ps.length) throw new HttpErr(401, "NO_MODEL_KEY");
+  const all = c.providers || providers();
+  if (!all.length) throw new HttpErr(401, "NO_MODEL_KEY");
+  const ps = c.budget.order(all);
   const errors: string[] = [];
-  const hedgeMs = c.hedgeMs ?? (Number(env("LLM_HEDGE_MS")) || 25_000);
-  for (const p of ps) {
-    const models = orderModels([...p.models, ...((await p.discover?.()) || [])]);
-    const ctl = new AbortController();
-    try {
-      const won = await new Promise<{ data: T; model: string; provider: string }>((resolve, reject) => {
-        let next = 0, running = 0, done = false;
-        let timer: ReturnType<typeof setTimeout> | undefined;
-        const launch = () => {
-          if (done || next >= models.length) return;
-          const m = models[next++];
-          running++;
-          clearTimeout(timer);
-          if (next < models.length && running < 3) timer = setTimeout(launch, hedgeMs);
-          attempt(c, p, m, ctl.signal).then(
-            (r) => { if (!done) { done = true; clearTimeout(timer); resolve(r); } },
-            (e: any) => {
-              running--;
-              errors.push(`${p.id}:${m}: ${String(e?.message || e).slice(0, 160)}`);
-              if (done) return;
-              if (e instanceof BudgetErr || e?.status === 401 || e?.status === 403) { done = true; clearTimeout(timer); reject(e); return; }
-              if (next < models.length) launch();
-              else if (running === 0) { done = true; clearTimeout(timer); reject(new Error("all models failed")); }
-            },
-          );
-        };
-        launch();
-      });
-      ctl.abort();
-      return won;
-    } catch (e: any) {
-      ctl.abort();
-      if (e instanceof BudgetErr) throw e;
-    }
-  }
-  throw new Error(`All models failed: ${errors.join(" | ").slice(0, 600)}`);
+  return await new Promise((resolve, reject) => {
+    let next = 0, running = 0, done = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const ctls: { p: Provider; ctl: AbortController; at: number }[] = [];
+    const end = () => { done = true; clearTimeout(timer); };
+    const launch = () => {
+      if (done || next >= ps.length) return;
+      const p = ps[next++];
+      running++;
+      clearTimeout(timer);
+      if (next < ps.length) timer = setTimeout(launch, c.providerHedgeMs ?? providerHedgeMs(p));
+      const me = { p, ctl: new AbortController(), at: Date.now() };
+      ctls.push(me);
+      runProvider(c, p, c.hedgeMs ?? modelHedgeMs(p), me.ctl.signal, errors).then(
+        (r) => {
+          if (done) return;
+          end();
+          // anyone who started before the winner and is still running lost the race: slow for this run
+          for (const o of ctls) if (o !== me && !o.ctl.signal.aborted) { if (o.at <= me.at) c.budget.healthOf(o.p.id).slow++; o.ctl.abort(); }
+          resolve(r);
+        },
+        (e: any) => {
+          running--;
+          me.ctl.abort();
+          if (done) return;
+          if (!(e instanceof BudgetErr)) c.budget.healthOf(p.id).fails++;
+          if (e instanceof BudgetErr) { end(); for (const o of ctls) o.ctl.abort(); reject(e); return; }
+          if (next < ps.length) launch();
+          else if (running === 0) { end(); reject(new Error(`All models failed: ${errors.join(" | ").slice(0, 600)}`)); }
+        },
+      );
+    };
+    launch();
+  });
 }

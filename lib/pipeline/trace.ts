@@ -13,6 +13,8 @@ export type Trace = {
   /** Typed decisions and which engine made each (Jev with its probability, the LLM, rules, or code). Optional for old traces. */
   decisions?: Decision[];
   retrieval?: { firecrawl: boolean; firecrawlPages: number; jina: string };
+  /** Provider order this run started with, and per-provider health at the end (timeouts, failures, races lost). */
+  providers?: { order: string[]; health: Record<string, { timeouts: number; fails: number; slow: number }> };
 };
 
 export function newTraceId() {

@@ -3,16 +3,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Fact, Need, Profile, ProviderGraph } from "@/lib/graph/schema";
 import { DEFAULT_PROFILE } from "@/lib/graph/schema";
-import { plan, planFacts, TIER_LABEL, TIER_HINT, defaultCaps, BUSINESS_FACT, type PlanStep, type ToggleKey } from "@/lib/engine";
+import { plan, planFacts, TIER_LABEL, TIER_HINT, defaultCaps, cleanCaps, BUSINESS_FACT, type PlanStep, type ToggleKey } from "@/lib/engine";
 import { graphToGuide } from "@/lib/graph/adapt";
-import { needHref } from "@/lib/urlstate";
+import { needHref, parseNeed, parseProfile } from "@/lib/urlstate";
 import { fmtEffort } from "@/lib/plan";
 import { COMPOSIO_CALLBACK } from "@/lib/kit";
 import type { Trace } from "@/lib/pipeline/trace";
 import type { PublishVerdict } from "@/lib/publish";
 import { recordVisit, setPinned, readShelf, isPinned, onShelfChange } from "@/lib/shelf";
 import Runway from "./Runway";
-import SetupKit, { copyText } from "./SetupKit";
+import dynamic from "next/dynamic";
+import { copyText } from "@/lib/copy";
+// the drawer is only needed after a click: keep it (and lib/kit's generators) out of the guide's first-load JS
+const SetupKit = dynamic(() => import("./SetupKit"), { ssr: false });
 import Term, { WithTerms } from "./Term";
 import { CountText, Collapse, useFlip } from "./motion";
 import { Disclosure, Icon, Seg, StatusBadge, Tick, useToast } from "./ui";
@@ -25,7 +28,8 @@ const TOGGLES: Record<ToggleKey, { label: string; hint: string; options: { v: st
 
 export type GuideMeta = { storedAt?: string; stale?: boolean; recheckInMin?: number; onRecheck?: () => void; rechecking?: boolean };
 
-export default function Guide({ graph, publish, initialNeed, trace, live, meta }: { graph: ProviderGraph; publish?: PublishVerdict; initialNeed?: { caps?: string[]; profile?: Partial<Profile> }; trace?: Trace; live?: React.ReactNode; meta?: GuideMeta }) {
+/** `fromUrl`: the page is static, so the need in the URL (?need=&who=&scale=&biz=) is applied after hydration. */
+export default function Guide({ graph, publish, initialNeed, trace, live, meta, fromUrl }: { graph: ProviderGraph; publish?: PublishVerdict; initialNeed?: { caps?: string[]; profile?: Partial<Profile> }; trace?: Trace; live?: React.ReactNode; meta?: GuideMeta; fromUrl?: boolean }) {
   const [need, setNeed] = useState<Need>(() => ({ caps: initialNeed?.caps?.length ? initialNeed.caps : defaultCaps(graph), profile: { ...DEFAULT_PROFILE, ...(initialNeed?.profile || {}) } }));
   const [kit, setKit] = useState(false);
   const [done, setDone] = useState<string[]>([]);
@@ -48,7 +52,22 @@ export default function Guide({ graph, publish, initialNeed, trace, live, meta }
   useEffect(() => { recordVisit(shelfItem); setPin(isPinned(readShelf(), graph.slug)); return onShelfChange(() => setPin(isPinned(readShelf(), graph.slug))); }, [shelfItem, graph.slug]);
   // stored guides have a permanent link: no need to embed the graph in the URL any more
   const embed = generated && !meta?.storedAt;
-  useEffect(() => { window.history.replaceState(null, "", needHref(graph, p.need, { embed })); }, [p.need, graph, embed]);
+  const synced = useRef(!fromUrl);
+  const hadParams = useRef(false);
+  useEffect(() => {
+    if (!fromUrl) return;
+    const sp = new URLSearchParams(window.location.search);
+    const caps = parseNeed(sp.get("need"));
+    if (caps || sp.has("who") || sp.has("scale") || sp.has("biz")) {
+      hadParams.current = true;
+      setNeed({ caps: caps ? cleanCaps(graph, caps) : defaultCaps(graph), profile: { ...DEFAULT_PROFILE, ...parseProfile({ who: sp.get("who") || undefined, scale: sp.get("scale") || undefined, biz: sp.get("biz") || undefined }) } });
+    }
+  }, [fromUrl, graph]);
+  useEffect(() => {
+    // the first run after mount would write the default need over the URL's: skip it, the setNeed above re-runs us
+    if (!synced.current) { synced.current = true; if (hadParams.current) return; }
+    window.history.replaceState(null, "", needHref(graph, p.need, { embed }));
+  }, [p.need, graph, embed]);
 
   const shareUrl = () => window.location.origin + needHref(graph, p.need, { embed });
   const toggleCap = (id: string) => setNeed((n) => ({ ...n, caps: n.caps.includes(id) ? (n.caps.length > 1 ? n.caps.filter((x) => x !== id) : n.caps) : [...n.caps, id] }));

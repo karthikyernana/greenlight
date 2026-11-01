@@ -18,6 +18,6 @@ Three places, nothing else: **Home** (command bar → Your apps → board), **Gu
 
 **Trace (`/trace/<id>`).** Stages, model calls, tool calls, decisions, each in its own panel; wide tables scroll inside their panel on small screens. Traces are stored with the guide, so they open from any instance.
 
-**Motion.** Real spring curves (`lib/spring.ts`, compiled to CSS `linear()`), 150–350 ms: FLIP for list reorders, height springs for expand/collapse, number tweening, a sliding segmented thumb, the setup-kit sheet, a glass toast, and a shared-element transition (View Transitions API) from a board row's name to the guide title. No bounce, no confetti. `prefers-reduced-motion` turns all of it off.
+**Motion.** Real spring curves (`lib/spring.ts`, compiled to CSS `linear()`), 150–350 ms: FLIP for list reorders, height springs for expand/collapse, number tweening, a sliding segmented thumb, the setup-kit sheet, a glass toast. The guide title rises in with a CSS animation on arrival; navigation never waits for motion (v4.1 removed the View Transitions shared-element flow, which froze clicks for 4 s). A clicked row shows its pressed state on pointerdown, and `loading.tsx` shows the guide skeleton until the route is in. No bounce, no confetti. `prefers-reduced-motion` turns all of it off.
 
 **Overflow rules.** Every grid cell is `min-width: 0`; one-line cells ellipsize with the full text in `title`; long URLs and code wrap anywhere; wide tables scroll inside their panel. Checked at 1440 px and 390 px (and down to 375 px).

@@ -113,6 +113,7 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     trace.tokens.prompt = budget.calls.reduce((a, c) => a + c.prompt, 0);
     trace.tokens.completion = budget.calls.reduce((a, c) => a + c.completion, 0);
     trace.models = [...new Set(budget.calls.filter((c) => c.ok).map((c) => `${c.provider}:${c.model}`))];
+    trace.providers = { order: ps.map((p) => p.id), health: Object.fromEntries(budget.health) };
     trace.retrieval = { firecrawl: firecrawlConfigured(), firecrawlPages: ret.state.firecrawlUsed, jina: ret.state.jinaOff ? (ret.state.jinaNote ? `off (${ret.state.jinaNote})` : "off") : "on" };
     saveTrace(trace);
     return { type: "trace", trace };

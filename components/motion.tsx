@@ -124,19 +124,3 @@ export function CountText({ value, className = "" }: { value: string; className?
   }, [value, reduced]);
   return <span ref={span} className={`num inline-block ${className}`}>{shown}</span>;
 }
-
-/** Shared-element navigation: name the source element, start a view transition, navigate, end when the target exists. */
-export function navigateWithTransition(go: () => void, source?: HTMLElement | null, name = "app-title") {
-  const d = document as Document & { startViewTransition?: (cb: () => Promise<void> | void) => unknown };
-  if (!d.startViewTransition || calm()) { go(); return; }
-  if (source) source.style.viewTransitionName = name;
-  d.startViewTransition(async () => {
-    if (source) source.style.viewTransitionName = "";
-    go();
-    const t0 = Date.now();
-    await new Promise<void>((res) => {
-      const check = () => (document.querySelector(`[data-vt="${name}"]`) || Date.now() - t0 > 900 ? res() : requestAnimationFrame(check));
-      check();
-    });
-  });
-}

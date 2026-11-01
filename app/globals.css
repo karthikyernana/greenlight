@@ -127,6 +127,10 @@ button { cursor: pointer; }
 .row-link { transition: background-color .15s; }
 .row-link:hover, .row-link[data-active="true"] { background: color-mix(in srgb, var(--color-shade) 70%, white); }
 .row-link[data-active="true"] { box-shadow: inset 2px 0 0 var(--color-signal); }
+/* pressed / navigating: painted on pointerdown, before the route swaps */
+.row-link[data-pending="true"] { background: color-mix(in srgb, var(--color-shade) 90%, white); box-shadow: inset 3px 0 0 var(--color-signal); position: relative; }
+.row-link[data-pending="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--color-signal), transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: row-progress 0.9s linear infinite; }
+@keyframes row-progress { from { background-position: -50% 0; } to { background-position: 150% 0; } }
 
 .disclose-chev { transition: transform var(--dur-snappy) var(--ease-snappy); display: inline-block; }
 [aria-expanded="true"] > .disclose-chev, [aria-expanded="true"] .disclose-chev { transform: rotate(90deg); }
@@ -151,11 +155,10 @@ button { cursor: pointer; }
 .sheet-backdrop { background: rgba(17, 20, 18, .32); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 }
 
-[data-vt="app-title"] { view-transition-name: app-title; }
-::view-transition-group(app-title) { animation-duration: 280ms; animation-timing-function: var(--ease-gentle); }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 200ms; }
+/* the guide title rises in on arrival; CSS only, never blocks navigation (the old view-transition flow froze the page) */
+@keyframes rise-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+[data-vt="app-title"] { animation: rise-in 220ms var(--ease-gentle, ease-out) both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; animation-iteration-count: 1 !important; }
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }

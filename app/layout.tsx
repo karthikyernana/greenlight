@@ -18,7 +18,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#f3f4f1", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const index = libraryIndex();
+  // the header bar only needs what the compact command rows show: keep the 100-app list small in every page's payload
+  const index = libraryIndex().map(({ slug, name, domain, managed, composioSlug, category, curated, generated, stored, status, wait }) => ({ slug, name, domain, managed, composioSlug, category, curated, generated, stored, status, wait }));
   return (
     <html lang="en" className={`${host.variable} ${jet.variable}`} style={springCssVars() as React.CSSProperties}>
       <body>

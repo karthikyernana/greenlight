@@ -5,18 +5,8 @@ import { buildKit, kitMarkdown } from "@/lib/kit";
 import { animate } from "./motion";
 import { Icon } from "./ui";
 
-export async function copyText(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const t = document.createElement("textarea");
-    t.value = text;
-    document.body.appendChild(t);
-    t.select();
-    document.execCommand("copy");
-    t.remove();
-  }
-}
+export { copyText } from "@/lib/copy";
+import { copyText } from "@/lib/copy";
 
 /** One drawer with everything an agent can produce right now. Deterministic, instant, no model call. */
 export default function SetupKit({ g, sel, shareUrl, onClose, planned }: { g: Guide; sel: string[]; shareUrl: string; onClose: () => void; planned?: { steps: Step[]; wait: string } }) {

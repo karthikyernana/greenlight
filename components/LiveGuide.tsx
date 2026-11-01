@@ -26,15 +26,24 @@ const fresh = () => Object.fromEntries(LANES.map((l) => [l.id, { status: "pendin
 
 /** Apps outside the library. A stored guide renders at once (zero model calls); otherwise the server either serves
     one from the shared store or investigates live in five lanes, and the guide fills in when the graph lands. */
-export default function LiveGuide({ slug, name, q, composioSlug, caps, profile, stored }: { slug: string; name: string; q?: string; composioSlug?: string; caps?: string[]; profile?: Partial<Profile>; stored?: StoredProps }) {
+export default function LiveGuide({ slug, name: name0, q: q0, composioSlug: cs0, stored }: { slug: string; name: string; q?: string; composioSlug?: string; caps?: string[]; profile?: Partial<Profile>; stored?: StoredProps }) {
   const router = useRouter();
+  /* The page is static/ISR, so ?q= and ?cs= are read here after hydration; the investigation waits for them. */
+  const [url, setUrl] = useState<{ q?: string; cs?: string } | null>(null);
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    setUrl({ q: sp.get("q")?.trim() || undefined, cs: sp.get("cs")?.trim() || undefined });
+  }, []);
+  const q = url?.q || q0;
+  const name = url?.q || name0;
+  const composioSlug = url?.cs || cs0;
   const [graph, setGraph] = useState<ProviderGraph | null>(stored?.graph || null);
   const [publish, setPublish] = useState<PublishVerdict | undefined>(stored?.publish);
   const [meta, setMeta] = useState<{ storedAt?: string; stale?: boolean; recheckInMin?: number }>({ storedAt: stored?.storedAt, stale: stored?.stale, recheckInMin: stored?.recheckInMin });
   const [trace, setTrace] = useState<Trace | undefined>();
   const [lanes, setLanes] = useState<Record<StageId, Lane>>(fresh);
   const [state, setState] = useState<"idle" | "running" | "done" | "error">(stored ? "done" : "idle");
-  const [error, setError] = useState<{ code?: string; message: string }>();
+  const [error, setError] = useState<{ code?: string; message: string; suggestions?: { slug: string; name: string; href: string }[] }>();
   const [elapsed, setElapsed] = useState(0);
   const [run, setRun] = useState(0);
   const t0 = useRef(0);
@@ -42,6 +51,7 @@ export default function LiveGuide({ slug, name, q, composioSlug, caps, profile, 
 
   useEffect(() => {
     if (run === 0 && stored) return; // served by the store on the server: nothing to do
+    if (!url) return; // wait until ?q= / ?cs= have been read
     if (run === 0) {
       const restored = decodeGraphHash(window.location.hash, parseGraph);
       if (restored) { setGraph(restored); setState("done"); return; }
@@ -94,7 +104,7 @@ export default function LiveGuide({ slug, name, q, composioSlug, caps, profile, 
               setTrace(ev.trace);
               try { localStorage.setItem(`gl:trace:${ev.trace.id}`, JSON.stringify(ev.trace)); } catch {}
             } else if (ev.type === "notice") flash(ev.message);
-            else if (ev.type === "error") { setError({ code: ev.code, message: ev.message }); setState("error"); finished = true; }
+            else if (ev.type === "error") { setError({ code: ev.code, message: ev.message, suggestions: ev.suggestions }); setState("error"); finished = true; }
           }
         }
         if (!finished && !cancelled) { if (got) setState("done"); else { setError({ message: "The connection closed before the investigation finished." }); setState("error"); } }
@@ -103,16 +113,17 @@ export default function LiveGuide({ slug, name, q, composioSlug, caps, profile, 
       } finally { clearInterval(tick); }
     })();
     return () => { cancelled = true; clearInterval(tick); };
-  }, [slug, name, q, composioSlug, run]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [slug, name, q, composioSlug, run, url]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const showPanel = state === "running" || state === "error" || (state === "done" && !!trace);
+  const notApp = error?.code === "not_an_app";
+  const showPanel = !notApp && (state === "running" || state === "error" || (state === "done" && !!trace));
   const panel = showPanel ? <Investigation lanes={lanes} state={state} elapsed={elapsed} error={error} onRetry={error && error.code !== "no_model" ? () => setRun((n) => n + 1) : undefined} collapsed={state === "done"} /> : null;
   const onRecheck = () => setRun((n) => n + 1);
 
   if (graph)
     return (
       <>
-        <Guide key={graph.slug + (graph.traceId || "")} graph={graph} publish={publish} initialNeed={{ caps, profile }} trace={trace} live={panel} meta={{ ...meta, onRecheck, rechecking: state === "running" }} />
+        <Guide key={graph.slug + (graph.traceId || "")} graph={graph} publish={publish} fromUrl trace={trace} live={panel} meta={{ ...meta, onRecheck, rechecking: state === "running" }} />
         {toast}
       </>
     );
@@ -122,16 +133,24 @@ export default function LiveGuide({ slug, name, q, composioSlug, caps, profile, 
       <section className="pt-5 sm:pt-7">
         <div className="flex flex-wrap items-center gap-3">
           <h1 data-vt="app-title" className="text-[34px] font-semibold leading-none tracking-[-0.03em] sm:text-[46px]">{name}</h1>
-          <span className="badge">{state === "error" ? "Stopped" : "Investigating"}</span>
+          <span className="badge">{notApp ? "Not found" : state === "error" ? "Stopped" : "Investigating"}</span>
         </div>
-        {state === "error" ? (
+        {notApp ? (
+          <div className="mt-4 max-w-[820px]" role="alert" data-rejected="">
+            <p className="text-[18px] leading-snug sm:text-[21px]"><span className="font-semibold">Nothing to investigate.</span> <span className="text-ink-2">{error?.message}</span></p>
+            {!!error?.suggestions?.length && (
+              <p className="mt-3 flex flex-wrap items-center gap-2 text-[14px] text-ink-3">Did you mean {error.suggestions.map((s) => <a key={s.slug} href={s.href} className="chip">{s.name}</a>)}</p>
+            )}
+            <p className="mt-4 text-[14px]"><a href="/" className="underline underline-offset-4">Back to all apps</a></p>
+          </div>
+        ) : state === "error" ? (
           <p className="mt-4 max-w-[820px] text-[18px] leading-snug sm:text-[21px]"><span className="font-semibold">No plan yet.</span> <span className="text-ink-2">{error?.message}</span></p>
         ) : (
           <p className="mt-4 max-w-[820px] text-[18px] leading-snug text-ink-2 sm:text-[21px]">Reading {name}&apos;s docs and testing its endpoints. Every quote is checked against its source before it reaches the plan, and the finished guide is saved so nobody has to wait for it again.</p>
         )}
       </section>
       {panel}
-      {state === "running" && <Skeleton />}
+      {(state === "running" || (state === "idle" && !stored)) && !notApp && <Skeleton />}
       {toast}
     </main>
   );

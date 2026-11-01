@@ -41,6 +41,9 @@ async function collect(it: AsyncGenerator<GenEvent>) { const out: GenEvent[] = [
 let fb = fakeBackend();
 beforeEach(() => { fb = fakeBackend(); _setBackend(fb.b); delete process.env.BLOB_READ_WRITE_TOKEN; });
 
+/* The input gate has its own tests (tests/validate.test.ts); here every name is treated as a real app. */
+const passCheck = async (q: string) => ({ ok: true as const, via: "search" as const, q, app: q, slug: q.toLowerCase(), href: `/guide/${q.toLowerCase()}`, ms: 0 });
+
 test("canonical slug: name, domain, URL, subdomain and 'API' suffix are one key", () => {
   for (const s of ["Dropbox", "dropbox.com", "https://www.dropbox.com/developers", "Dropbox API", "developers.dropbox.com", "DROPBOX"]) assert.equal(canonicalSlug(s), "dropbox", s);
   assert.equal(canonicalSlug("api.xero.co.uk"), "xero");
@@ -75,17 +78,17 @@ test("publishing: verified only when quotes ≥ 80%, no unresolved contradiction
 test("generate once: the second request is served from the store with zero investigations", async () => {
   let runs = 0;
   const impl = async function* (): AsyncGenerator<any> { runs++; yield { type: "graph", graph: xero() }; yield { type: "trace", trace: trace() }; };
-  const first = await collect(generate({ q: "Xero" }, { investigateImpl: impl as any }));
+  const first = await collect(generate({ q: "Xero" }, { investigateImpl: impl as any, check: passCheck }));
   assert.equal(runs, 1);
   const pub = first.find((e) => e.type === "published") as any;
   assert.ok(pub, "published event");
   assert.ok(fb.m.has("guides/xero.json"));
-  const second = await collect(generate({ q: "xero.com" }, { investigateImpl: impl as any }));
+  const second = await collect(generate({ q: "xero.com" }, { investigateImpl: impl as any, check: passCheck }));
   assert.equal(runs, 1, "no second investigation");
   assert.equal((second[0] as any).type, "cached");
   assert.ok(second.some((e) => e.type === "graph"));
   // a typo is matched against the store, not regenerated
-  const typo = await collect(generate({ q: "Xer0" }, { investigateImpl: impl as any }));
+  const typo = await collect(generate({ q: "Xer0" }, { investigateImpl: impl as any, check: passCheck }));
   assert.equal(runs, 1);
   assert.ok(typo.some((e) => e.type === "cached" || e.type === "redirect"));
 });
@@ -111,8 +114,8 @@ test("publishing verdict is stored: draft when the verifier misses the bar, list
 test("re-check is rate-limited per app; stale guides (> 30 days) can always be re-checked", async () => {
   let runs = 0;
   const impl = async function* (): AsyncGenerator<any> { runs++; yield { type: "graph", graph: xero() }; yield { type: "trace", trace: trace() }; };
-  await collect(generate({ q: "Xero" }, { investigateImpl: impl as any }));
-  const again = await collect(generate({ q: "Xero", fresh: true }, { investigateImpl: impl as any }));
+  await collect(generate({ q: "Xero" }, { investigateImpl: impl as any, check: passCheck }));
+  const again = await collect(generate({ q: "Xero", fresh: true }, { investigateImpl: impl as any, check: passCheck }));
   assert.equal(runs, 1);
   assert.ok(again.some((e) => e.type === "notice"));
   const old = new Date(Date.now() - 31 * 86_400_000).toISOString();
@@ -124,9 +127,9 @@ test("re-check is rate-limited per app; stale guides (> 30 days) can always be r
 test("library apps are never regenerated, and near-misses redirect to them", async () => {
   let runs = 0;
   const impl = async function* (): AsyncGenerator<any> { runs++; };
-  const ev = await collect(generate({ q: "gmail" }, { investigateImpl: impl as any }));
+  const ev = await collect(generate({ q: "gmail" }, { investigateImpl: impl as any, check: passCheck }));
   assert.equal((ev[0] as any).source, "library");
-  const near = await collect(generate({ q: "hubspt" }, { investigateImpl: impl as any }));
+  const near = await collect(generate({ q: "hubspt" }, { investigateImpl: impl as any, check: passCheck }));
   assert.equal((near[0] as any).type, "redirect");
   assert.equal(runs, 0);
 });
@@ -160,7 +163,8 @@ test("shelf: visits go to recent (deduped, newest first), pin toggles", () => {
   assert.ok(!isPinned(sh, "slack"));
 });
 
-test("fallback order: LLM_* out of balance (402) → Gemini with its default model; status reports it", async () => {
+test("fallback order: MODEL_ORDER=llm first, LLM_* out of balance (402) → Gemini with its default model; status reports it", async () => {
+  process.env.MODEL_ORDER = "llm,gemini,groq";
   process.env.LLM_BASE_URL = "https://gate.example/v1";
   process.env.LLM_API_KEY = "k1";
   process.env.LLM_MODEL = "m1";
@@ -185,7 +189,7 @@ test("fallback order: LLM_* out of balance (402) → Gemini with its default mod
     assert.equal(s.gemini.modelFrom, "default");
   } finally {
     globalThis.fetch = real;
-    for (const k of ["LLM_BASE_URL", "LLM_API_KEY", "LLM_MODEL", "GEMINI_API_KEY", "GROQ_API_KEY"]) delete process.env[k];
+    for (const k of ["LLM_BASE_URL", "LLM_API_KEY", "LLM_MODEL", "GEMINI_API_KEY", "GROQ_API_KEY", "MODEL_ORDER"]) delete process.env[k];
   }
 });
 

@@ -8,12 +8,26 @@ import { publishVerdict } from "./publish";
 import type { ProviderGraph } from "./graph/schema";
 import type { Trace } from "./pipeline/trace";
 import { fakeInvestigate } from "./pipeline/fake";
+import { checkInput, directoryFrom, gibberishReason, normalise, type CheckResult, type Suggestion } from "./validate";
+import { libraryIndex, intentIndex } from "./library";
+import { listStored } from "./store";
+
+/** The input gate with the server's directory (library + Composio list + shared store). */
+export async function gate(q: string): Promise<CheckResult> {
+  // Fixture names for the fake pipeline (tests and local e2e only; ignored unless GREENLIGHT_FAKE_PIPELINE=1).
+  const allow = process.env.GREENLIGHT_FAKE_PIPELINE === "1" ? (process.env.GREENLIGHT_GATE_ALLOW || "").trim() : "";
+  const n = normalise(q);
+  if (allow && new RegExp(allow, "i").test(n) && !gibberishReason(n)) return { ok: true, via: "search", q: n, app: n, slug: canonicalSlug(n), href: `/guide/${canonicalSlug(n)}?q=${encodeURIComponent(n)}`, evidence: "test fixture", ms: 0 };
+  const stored = await listStored().catch(() => []);
+  return checkInput(q, { directory: directoryFrom(libraryIndex()), intents: intentIndex(), stored });
+}
 
 export type GenEvent =
   | PipeEvent
   | { type: "redirect"; slug: string; name: string; reason: string }
   | { type: "cached"; source: "library" | "store"; storedAt?: string; stale?: boolean; recheckInMin?: number }
   | { type: "notice"; message: string }
+  | { type: "error"; code: "not_an_app"; message: string; suggestions: Suggestion[]; reason: string }
   | { type: "published"; publish: StoredGuide["publish"]; storedAt: string; store: "blob" | "memory" };
 
 export type GenBody = { q?: string; slug?: string; composioSlug?: string; fresh?: boolean };
@@ -37,7 +51,7 @@ export function storedEvents(rec: StoredGuide): GenEvent[] {
   ];
 }
 
-export async function* generate(body: GenBody, opts: { ip?: string; run?: RunOpts; investigateImpl?: typeof investigate } = {}): AsyncGenerator<GenEvent> {
+export async function* generate(body: GenBody, opts: { ip?: string; run?: RunOpts; investigateImpl?: typeof investigate; check?: (q: string) => Promise<CheckResult> } = {}): AsyncGenerator<GenEvent> {
   const q = String(body.q || "").trim().slice(0, 120);
   if (!q) { yield { type: "error", code: "invalid", message: "Type an app name or website." }; return; }
   const slug = canonicalSlug(body.slug || q);
@@ -65,6 +79,12 @@ export async function* generate(body: GenBody, opts: { ip?: string; run?: RunOpt
       return;
     }
     await markRunStarted(found.slug).catch(() => {});
+  }
+
+  // 2b. input gate: nothing is investigated until the input resolves to a real product (≤ ~2 s, no model calls)
+  if (!found) {
+    const c = await (opts.check || gate)(q);
+    if (!c.ok) { yield { type: "error", code: "not_an_app", message: c.message, suggestions: c.suggestions, reason: c.code }; return; }
   }
 
   // 3. investigate (one run per app per instance: a second request waits for the first and gets the stored result)

@@ -33,9 +33,12 @@ async function page(vp = DESKTOP, { reduced = true } = {}) {
   return p;
 }
 const close = async (p) => { await p.ctx.close(); };
+/* "load" + hydrated + a short settle, not networkidle: the board prefetches guide routes, and puppeteer's idle
+   accounting keeps prefetches that were in flight when the previous document unloaded as pending for ~25 s. */
 async function go(p, path) {
-  await p.goto(BASE + path, { waitUntil: "networkidle2", timeout: 90_000 });
-  await sleep(300);
+  await p.goto(BASE + path, { waitUntil: "load", timeout: 90_000 });
+  await p.waitForFunction(() => document.readyState === "complete" && !!(window.next && window.next.version), { timeout: 30_000 }).catch(() => {});
+  await sleep(600);
 }
 /** For pages whose state moves while loading (a fake investigation finishes in ~1 s, before networkidle). */
 async function goEarly(p, path) { await p.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 90_000 }); }
@@ -104,7 +107,7 @@ async function t(name, fn, { skip } = {}) {
 
 (async () => {
   browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || "/usr/bin/chromium", args: ["--no-sandbox", "--disable-dev-shm-usage", ...(process.env.E2E_CHROME_ARGS || "").split(/\s+/).filter(Boolean)] });
-  const fakeApp = `Zentrybooks${Date.now().toString(36).slice(-4)}`;
+  const fakeApp = `Zentrybooks${String(Date.now()).slice(-5)}`;
   const fakeSlug = fakeApp.toLowerCase();
 
   await t("home loads styled (desktop + mobile), no failed assets, no overflow", async () => {
@@ -206,7 +209,8 @@ async function t(name, fn, { skip } = {}) {
     await waitText(p, 'section[aria-label="Your apps"]', /Slack/);
     const pinnedLabel = await p.$eval('section[aria-label="Your apps"]', (s) => s.textContent);
     if (!/pinned/.test(pinnedLabel)) throw new Error("Slack not shown as pinned");
-    await p.reload({ waitUntil: "networkidle2" });
+    await p.reload({ waitUntil: "load" });
+    await sleep(600);
     await waitText(p, 'section[aria-label="Your apps"]', /Slack/);
     await audit(p, "home with shelf");
     await shot(p, "home-shelf");
@@ -234,7 +238,7 @@ async function t(name, fn, { skip } = {}) {
 
   await t("investigation in progress renders (screenshot of lanes mid-run)", async () => {
     const p = await page();
-    const app = `Midrunly${Date.now().toString(36).slice(-4)}`;
+    const app = `Midrunly${String(Date.now()).slice(-5)}`;
     await goEarly(p, `/guide/${app.toLowerCase()}?q=${app}`);
     await waitText(p, "button", /Investigating/, 10_000);
     await audit(p, "investigating");
@@ -314,6 +318,84 @@ async function t(name, fn, { skip } = {}) {
     await clickText(q, "main section > h2 > button", /Steps/);
     const anims = await q.evaluate(() => document.getAnimations().length);
     console.log(`    with motion: ${anims} animation(s) on expand`);
+    await close(q);
+  });
+
+  /* Click-to-feedback timing. Real mouse click on a board row with motion ON (what users have). In-page clock:
+     t0 = the pointerdown event; feedback = the first animation frame after the row shows its pressed state (or the
+     route swapped); content = the first frame with the guide's title on /guide/. Desktop and a mid phone
+     (390 px, CPU 4x slower, Fast 4G: 150 ms RTT, ~9 Mbps). Limits: feedback < 100 ms; content < 1 s desktop, < 1.5 s phone. */
+  async function clickTiming(vp, throttle) {
+    const p = await page(vp, { reduced: false });
+    if (throttle) {
+      const c = await p.target().createCDPSession();
+      await c.send("Network.enable");
+      await c.send("Network.emulateNetworkConditions", { offline: false, latency: 150, downloadThroughput: (9 * 1024 * 1024) / 8, uploadThroughput: (1.5 * 1024 * 1024) / 8 });
+      await c.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+    }
+    await go(p, "/");
+    const sel = 'a[role="row"][href="/guide/gmail"]';
+    await p.waitForSelector(sel);
+    await p.$eval(sel, (el) => el.scrollIntoView({ block: "center" }));
+    await sleep(1200); // viewport prefetch, as after a real scroll
+    await p.evaluate((sel) => {
+      const m = (window.__m = {});
+      window.addEventListener("pointerdown", (e) => {
+        m.t0 = e.timeStamp;
+        const row = document.querySelector(sel);
+        const tick = (now) => {
+          const pend = row && row.isConnected && row.getAttribute("data-pending") === "true";
+          const swapped = location.pathname !== "/" || !!document.querySelector("[data-route-loading]");
+          if (m.feedback == null && (pend || swapped)) m.feedback = now - m.t0;
+          if (m.content == null && location.pathname.startsWith("/guide/") && document.querySelector('h1[data-vt="app-title"]')) m.content = now - m.t0;
+          if (m.content == null) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }, { capture: true, once: true });
+    }, sel);
+    await p.click(sel);
+    await p.waitForFunction(() => window.__m && window.__m.content != null, { timeout: 15_000 });
+    const m = await p.evaluate(() => window.__m);
+    const errs = p.errors.slice();
+    await close(p);
+    if (errs.length) throw new Error(errs.join(" | "));
+    return { feedback: Math.round(m.feedback), content: Math.round(m.content) };
+  }
+  await t("board click: visible feedback < 100 ms and the guide within budget (desktop + throttled phone)", async () => {
+    const d = await clickTiming(DESKTOP, false);
+    const m = await clickTiming(MOBILE, true);
+    console.log(`    desktop: feedback ${d.feedback} ms, guide ${d.content} ms · phone (4x CPU, Fast 4G): feedback ${m.feedback} ms, guide ${m.content} ms`);
+    const bad = [];
+    if (d.feedback >= 100) bad.push(`desktop feedback ${d.feedback} ms`);
+    if (m.feedback >= 100) bad.push(`phone feedback ${m.feedback} ms`);
+    if (d.content >= 1000) bad.push(`desktop guide ${d.content} ms`);
+    if (m.content >= 1500) bad.push(`phone guide ${m.content} ms`);
+    if (bad.length) throw new Error(bad.join(", "));
+  });
+
+  await t("gibberish is rejected fast: 'asdfgh' + Enter answers in < 2 s, never navigates or investigates", async () => {
+    const p = await page();
+    await go(p, "/");
+    await p.type('main input[aria-label^="Name an app"]', "asdfgh");
+    await waitText(p, "#cmd-results", /Investigate/);
+    const t0 = Date.now();
+    await p.keyboard.press("Enter");
+    await waitText(p, "[data-rejected]", /Couldn't find an app called "asdfgh"/, 5000);
+    const ms = Date.now() - t0;
+    console.log(`    rejected in ${ms} ms`);
+    if (ms >= 2000) throw new Error(`took ${ms} ms`);
+    await sleep(300);
+    if (new URL(p.url()).pathname !== "/") throw new Error(`navigated to ${p.url()}`);
+    const sugg = await p.$$eval("[data-rejected] a", (a) => a.length);
+    if (!sugg) throw new Error("no suggestions shown");
+    await audit(p, "rejected");
+    await close(p);
+    // a direct URL is gated on the server too
+    const q = await page(MOBILE);
+    await goEarly(q, "/guide/asdfgh?q=asdfgh");
+    await waitText(q, "[data-rejected]", /Couldn't find an app called "asdfgh"/, 8000);
+    if (await q.$('section[aria-label="Investigation"]')) throw new Error("investigation panel shown for gibberish");
+    await audit(q, "rejected direct url");
     await close(q);
   });
 

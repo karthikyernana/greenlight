@@ -6,10 +6,12 @@ import type { IndexEntry } from "@/lib/types";
 import { hrefFor } from "@/lib/search";
 import { parseIntent, type IntentIndex } from "@/lib/intent";
 import { hrefForIntent } from "@/lib/intentClient";
+import { intentHref as hrefForIntentLocal } from "@/lib/intent";
 import { commandRows, type StoredLite } from "@/lib/command";
 import { useStored } from "./useStored";
 import { CmdRowView } from "./CommandList";
-import { useFlip, navigateWithTransition } from "./motion";
+import { useFlip } from "./motion";
+import { checkQuery, type ClientCheck } from "@/lib/checkClient";
 import { Icon, Seg, StatusBadge } from "./ui";
 import Shelf from "./Shelf";
 
@@ -24,6 +26,8 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
   const [filter, setFilter] = useState<Filter>("ready");
   const [sort, setSort] = useState<Sort>("wait");
   const [hi, setHi] = useState(0);
+  const [checking, setChecking] = useState(false);
+  const [rejected, setRejected] = useState<Extract<ClientCheck, { ok: false }> | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const initialStored = useMemo<StoredLite[]>(() => [...index.filter((e) => e.stored), ...drafts].map((e) => ({ slug: e.slug, name: e.name, domain: e.domain, status: e.status || "draft" })), [index, drafts]);
@@ -49,21 +53,30 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
   const intent = useMemo(() => (q.trim().split(/\s+/).length >= 3 ? parseIntent(q, intents) : null), [q, intents]);
   const results = useMemo(() => (intent ? [] : commandRows(index, stored, q, 8)), [index, stored, q, intent]);
   const typing = q.trim().length > 0;
-  useEffect(() => setHi(0), [q]);
+  useEffect(() => { setHi(0); setRejected(null); }, [q]);
   useFlip(listRef, [filter, sort, typing]);
 
-  const open = (href: string, el?: HTMLElement | null) => navigateWithTransition(() => router.push(href), el);
+  /* Anything that would start a new investigation goes through the server's input gate first (< 2 s). */
+  const investigate = async (href: string) => {
+    if (checking) return;
+    setChecking(true);
+    const c = await checkQuery(q.trim());
+    setChecking(false);
+    if (c && !c.ok) { setRejected(c); return; }
+    router.push(c?.ok ? c.href : href);
+  };
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(results.length - 1, h + 1)); }
     if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); }
     if (e.key === "Escape") setQ("");
     if (e.key === "Enter") {
-      if (intent) { hrefForIntent(q, intent, jev).then((h) => router.push(h)); return; }
+      if (intent) { if (intent.ready) hrefForIntent(q, intent, jev).then((h) => router.push(h)); else investigate(hrefForIntentLocal(intent)); return; }
       const r = results[hi];
-      if (r) router.push(r.href);
+      if (r?.kind === "investigate") investigate(r.href);
+      else if (r) router.push(r.href);
     }
   };
-  const enterHint = intent ? "plan it" : results[hi]?.kind === "investigate" ? "investigate" : "open";
+  const enterHint = checking ? "checking…" : intent ? "plan it" : results[hi]?.kind === "investigate" ? "investigate" : "open";
 
   return (
     <main data-home="" className="mx-auto max-w-[1180px] px-4 sm:px-6">
@@ -108,10 +121,21 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
       <section aria-label={typing ? "Results" : "All apps"}>
         {typing ? (
           <div id="cmd-results" ref={listRef} className="panel max-w-[760px] overflow-hidden p-1" role="listbox" aria-label="Results">
+            {rejected && (
+              <div role="alert" data-rejected="" className="border-b rule px-4 py-3 text-[14px]">
+                <p className="text-ink">{rejected.message}</p>
+                {rejected.suggestions.length > 0 && (
+                  <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[13px] text-ink-3">Did you mean
+                    {rejected.suggestions.map((s) => <Link key={s.slug} href={s.href} className="badge hover:text-ink">{s.name}</Link>)}
+                  </p>
+                )}
+              </div>
+            )}
             {results.length === 0 && !intent && <p className="px-4 py-3 text-[14px] text-ink-3">No match.</p>}
             {intent && <p className="px-4 py-3 text-[14px] text-ink-2">Press <span className="kbd">↵</span> to plan {intent.app || "it"} for exactly this.</p>}
             {results.map((r, i) => (
-              <Link key={r.href + i} href={r.href} data-flip={`r-${r.href}`} role="option" aria-selected={i === hi} onMouseEnter={() => setHi(i)}
+              <Link key={r.href + i} href={r.href} prefetch={r.kind === "investigate" ? false : undefined} data-flip={`r-${r.href}`} role="option" aria-selected={i === hi} onMouseEnter={() => setHi(i)}
+                onClick={r.kind === "investigate" ? (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return; ev.preventDefault(); investigate(r.href); } : undefined}
                 className={`row-link flex items-center gap-3 rounded-[10px] px-4 py-3 text-[15px]`} data-active={i === hi}>
                 <CmdRowView r={r} active={i === hi} />
               </Link>
@@ -133,7 +157,7 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
               <div role="row" className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_150px_92px_104px] gap-x-5 border-b rule bg-shade/50 px-5 py-2 md:grid">
                 {["App", "What stands in the way", "Time to live", "Composio", "Guide"].map((h) => <span key={h} role="columnheader" className="label">{h}</span>)}
               </div>
-              {rows.map((e) => <BoardRow key={e.slug} e={e} onOpen={open} />)}
+              {rows.map((e) => <BoardRow key={e.slug} e={e} />)}
             </div>
             <p className="mt-3 text-[12.5px] text-ink-3">
               <span className="hidden md:inline"><span className="kbd">/</span> search · <span className="kbd">↑</span> <span className="kbd">↓</span> move · <span className="kbd">↵</span> open. </span>Managed = Composio already runs an approved OAuth app. Curated = hand-researched; Verified = agent-generated and passed every automatic check; Draft = agent-generated, a check failed.
@@ -145,10 +169,15 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
   );
 }
 
-function BoardRow({ e, onOpen }: { e: IndexEntry; onOpen: (href: string, el?: HTMLElement | null) => void }) {
+/* A plain <Link>: ready guides are statically prerendered and prefetched when the row scrolls into view, so the
+   click is a client-side swap with no server round trip. On-demand rows prefetch on hover / touch only. The row
+   marks itself pressed on pointerdown (painted in the same frame), and /guide/[slug]/loading.tsx covers the rest. */
+function BoardRow({ e }: { e: IndexEntry }) {
+  const router = useRouter();
   const ready = isReady(e);
   const href = hrefFor(e, "");
-  const nameRef = useRef<HTMLSpanElement>(null);
+  const press = (ev: React.PointerEvent<HTMLAnchorElement>) => { if (ev.button === 0 && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey) ev.currentTarget.dataset.pending = "true"; };
+  const warm = () => { if (!ready) router.prefetch(href); };
   const hot = (e.waitDays ?? 0) >= 14;
   const composio = e.managed === "available" ? "Managed" : e.managed === "not_available" ? "Own app" : "—";
   const wait = ready ? (
@@ -160,14 +189,18 @@ function BoardRow({ e, onOpen }: { e: IndexEntry; onOpen: (href: string, el?: HT
   return (
     <Link
       href={href}
+      prefetch={ready ? undefined : false}
       role="row"
       data-flip={e.slug}
-      onClick={(ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return; ev.preventDefault(); onOpen(href, nameRef.current); }}
+      onPointerDown={press}
+      onPointerEnter={warm}
+      onFocus={warm}
+      onClick={(ev) => { ev.currentTarget.dataset.pending = "true"; }}
       className="row-link grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 border-b rule px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_150px_92px_104px] md:gap-x-5 md:px-5"
     >
       <span role="cell" className="min-w-0">
         <span className="flex min-w-0 items-center gap-2">
-          <span ref={nameRef} className={`clamp-1 text-[15px] font-medium ${ready ? "" : "text-ink-2"}`}>{e.name}</span>
+          <span className={`clamp-1 text-[15px] font-medium ${ready ? "" : "text-ink-2"}`}>{e.name}</span>
           {ready && e.status && e.status !== "curated" && <StatusBadge status={e.status} className="md:hidden" />}
         </span>
         {e.category && <span className="hidden clamp-1 text-[12px] text-ink-3 md:block">{e.category}</span>}
