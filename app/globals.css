@@ -59,6 +59,9 @@ input:focus-visible { outline: none; }
 button { cursor: pointer; }
 
 @layer components {
+  /* Home owns the big command bar: hide the header one there (CSS, not usePathname, so SSR and hydration agree). */
+  body:has([data-home]) .headerbar-search { display: none; }
+
 .mono { font-family: var(--font-mono); font-feature-settings: "zero" 1; }
 .num { font-variant-numeric: tabular-nums; }
 .label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--color-ink-3); }

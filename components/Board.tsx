@@ -66,7 +66,7 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
   const enterHint = intent ? "plan it" : results[hi]?.kind === "investigate" ? "investigate" : "open";
 
   return (
-    <main className="mx-auto max-w-[1180px] px-4 sm:px-6">
+    <main data-home="" className="mx-auto max-w-[1180px] px-4 sm:px-6">
       <section className="pb-8 pt-8 sm:pt-14">
         <h1 className="max-w-[720px] text-[28px] font-semibold leading-[1.1] tracking-[-0.025em] sm:text-[40px]">How long until your agent&apos;s users can connect?</h1>
         <p className="mt-3 max-w-[600px] text-[15px] text-ink-2">Registering an OAuth app takes minutes; approval takes days to months, and the permissions you ask for decide which. Name an app, or describe what your agent does.</p>

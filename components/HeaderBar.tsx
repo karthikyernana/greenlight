@@ -41,12 +41,14 @@ export default function HeaderBar({ index, intents, jev = false }: { index: Inde
   const show = open && rows.length > 0;
   useEffect(() => { if (show) animate(list.current, [{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], "snappy"); }, [show]);
 
-  if (home) return <div className="flex-1" />;
-
+  /* Same markup on every route so hydration never depends on the pathname (an ISR-regenerated Home on Vercel was
+     rendered with the bar while the client's usePathname() said "/", which threw React #418). Home hides it in CSS
+     (body:has([data-home]) .headerbar-search) because Home owns the big command bar. */
   const go = (href: string) => { setOpen(false); setQ(""); ref.current?.blur(); router.push(href); };
 
   return (
     <div className="relative min-w-0 max-w-[460px] flex-1">
+      <div className="headerbar-search">
       <label className="flex h-9 items-center gap-2 rounded-[10px] border rule bg-surface/80 px-2.5 shadow-[var(--shadow-1)] transition-colors focus-within:border-ink-3">
         <span className="text-ink-3"><Icon name="search" size={14} /></span>
         <input
@@ -84,6 +86,7 @@ export default function HeaderBar({ index, intents, jev = false }: { index: Inde
           ))}
         </ul>
       )}
+      </div>
     </div>
   );
 }

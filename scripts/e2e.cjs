@@ -1,7 +1,8 @@
 /* End-to-end browser tests (puppeteer-core + a system Chromium).
      npm run e2e                                   → against http://localhost:3100 (a `next start` with GREENLIGHT_FAKE_PIPELINE=1)
      E2E_BASE=https://oauth-greenlight-v2.vercel.app npm run e2e   → against a deployment (the mocked-investigation test is skipped)
-   Env: CHROME_PATH (default /usr/bin/chromium), E2E_SHOTS=<dir> to save desktop 1440 + mobile 390 screenshots,
+   Env: CHROME_PATH (default /usr/bin/chromium), E2E_CHROME_ARGS (extra Chromium flags, e.g. --no-proxy-server when an
+        authenticating egress proxy is set in the environment and Chromium fails with ERR_INVALID_AUTH_CREDENTIALS), E2E_SHOTS=<dir> to save desktop 1440 + mobile 390 screenshots,
         E2E_FAKE=1 when the server runs the fake pipeline (default on for localhost).
    Every page visited also runs the layout audit: no horizontal page overflow, no leaf element whose text spills
    out of its box, no overlapping cells inside a table/board row, no failed _next/static asset, no page errors. */
@@ -36,6 +37,8 @@ async function go(p, path) {
   await p.goto(BASE + path, { waitUntil: "networkidle2", timeout: 90_000 });
   await sleep(300);
 }
+/** For pages whose state moves while loading (a fake investigation finishes in ~1 s, before networkidle). */
+async function goEarly(p, path) { await p.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 90_000 }); }
 async function waitText(p, sel, re, ms = 20_000) {
   await p.waitForFunction((s, src) => [...document.querySelectorAll(s)].some((e) => new RegExp(src).test(e.textContent || "")), { timeout: ms }, sel, re.source);
 }
@@ -100,7 +103,7 @@ async function t(name, fn, { skip } = {}) {
 }
 
 (async () => {
-  browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || "/usr/bin/chromium", args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+  browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || "/usr/bin/chromium", args: ["--no-sandbox", "--disable-dev-shm-usage", ...(process.env.E2E_CHROME_ARGS || "").split(/\s+/).filter(Boolean)] });
   const fakeApp = `Zentrybooks${Date.now().toString(36).slice(-4)}`;
   const fakeSlug = fakeApp.toLowerCase();
 
@@ -112,6 +115,8 @@ async function t(name, fn, { skip } = {}) {
       if (!/14px/.test(bg)) throw new Error(`panel styles missing: ${bg}`);
       const rows = await p.$$eval('[role="table"] a[role="row"]', (r) => r.length);
       if (rows < 10) throw new Error(`board has ${rows} rows`);
+      const headerBar = await p.$eval('header input[aria-label^="Find an app"]', (e) => e.offsetParent !== null).catch(() => "missing");
+      if (headerBar !== false) throw new Error(`header command bar on Home should be in the DOM but hidden, got ${headerBar}`);
       await audit(p, `home ${vp.width}`);
       await shot(p, "home");
       await close(p);
@@ -230,13 +235,13 @@ async function t(name, fn, { skip } = {}) {
   await t("investigation in progress renders (screenshot of lanes mid-run)", async () => {
     const p = await page();
     const app = `Midrunly${Date.now().toString(36).slice(-4)}`;
-    await go(p, `/guide/${app.toLowerCase()}?q=${app}`);
+    await goEarly(p, `/guide/${app.toLowerCase()}?q=${app}`);
     await waitText(p, "button", /Investigating/, 10_000);
     await audit(p, "investigating");
     await shot(p, "live");
     await close(p);
     const m = await page(MOBILE);
-    await go(m, `/guide/${app.toLowerCase()}x?q=${app}x`);
+    await goEarly(m, `/guide/${app.toLowerCase()}x?q=${app}x`);
     await waitText(m, "button", /Investigating/, 10_000);
     await audit(m, "investigating mobile");
     await shot(m, "live");
