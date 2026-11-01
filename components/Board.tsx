@@ -125,7 +125,7 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
         {typing ? (
           <div id="cmd-results" ref={listRef} className="panel max-w-[760px] overflow-hidden p-1" role="listbox" aria-label="Results">
             {rejected && (
-              <div role="alert" data-rejected="" className="border-b rule px-4 py-3 text-[14px]">
+              <div role="alert" data-rejected="" className={`px-4 py-3 text-[14px] ${results.length ? "border-b rule" : ""}`}>
                 <p className="text-ink">{rejected.message}</p>
                 {rejected.suggestions.length > 0 && (
                   <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[13px] text-ink-3">{suggestLead(rejected.suggestions)}

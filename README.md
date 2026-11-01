@@ -1,101 +1,117 @@
-# Greenlight v4
+# Greenlight
 
-**ChatGPT writes an answer. Greenlight works one out.**
+**How long until your agent's users can connect? Start the slow parts today.**
 
-Say what your agent needs ("triages my users' Gmail and drafts replies"). Greenlight computes your path from today to "real users can connect": how long, why, what an agent can prepare, and the fastest legitimate route. Every number traces to a fact with a source URL, a verbatim quote, a checked date and a status.
+Live: **https://oauth-greenlight-v2.vercel.app** · Source: this branch (`v4`) · Built as the Composio APM (Integrations) take-home.
 
-Live: https://oauth-greenlight-v2.vercel.app · Branch `v4` · Composio APM (Integrations) take-home.
+Pick an app (or type any app name or website) and tick what your agent needs to do. Greenlight shows how hard approval is, the realistic wait including the provider's review, what an agent can prepare versus what only you can do, the next step, and what to do when you hit a blocker. Every number traces to a fact marked **Tested**, **Sourced** or **Uncertain**, with its source link. Apps outside the library are investigated live by agents and saved as a shareable guide.
 
-## What's new in v4
-- **Generate once, reuse for everyone.** A finished investigation is stored (Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; else this instance's memory) under a canonical slug, so "Xero", "xero.com" and "developer.xero.com" are one guide. The next request, from anyone, renders it with zero model calls. Re-check only after 30 days or on request (rate-limited). `lib/store.ts`, `lib/generate.ts`, `lib/canonical.ts`.
-- **Publishing policy, no human click.** New guides are live at once on their own link as *Draft · agent-generated*; promoted to the board as *Verified by checks* only when ≥ 80% of quotes match the fetched source, no contradiction is left unresolved, and every gate fact is Sourced/Tested. *Curated* stays a separate, hand-researched badge. `lib/publish.ts`, [docs/PRODUCT_DECISIONS.md](docs/PRODUCT_DECISIONS.md).
-- **Your apps** shelf on Home: pinned + recently viewed, in localStorage, no login.
-- **Command bar matches before it generates**: library + store, exact and fuzzy (name/domain/typos); the server double-checks and also collapses concurrent requests for the same app into one run.
-- **Redesign**: calm panels on hairlines, glass only where content scrolls underneath (header, toast), spring motion (FLIP reorders, height springs, number tweening; the guide title rises in with CSS — the old shared-element View Transition froze clicks for 4 s and was removed in v4.1), no overflow down to 375 px. [docs/UI_FLOW.md](docs/UI_FLOW.md)
-- **Model order** (v4.1): default `GEMINI_API_KEY` → `GROQ_API_KEY` → `LLM_*` → OpenRouter, overridable with `MODEL_ORDER` (e.g. `llm,gemini,groq`; unlisted configured providers still run, last). Providers are staggered (the next starts after `PROVIDER_HEDGE_MS`, 40 s; 20 s after the slow `LLM_*` gateway, `LLM_PROVIDER_HEDGE_MS`), and a provider that times out, fails or loses a race is demoted for the rest of that run. Models: `GEMINI_API_KEY` (default `GEMINI_MODEL` = `gemini-2.5-flash,gemini-flash-latest`) → `GROQ_API_KEY` (default `openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3.8-27b`) → OpenRouter; `/api/status` reports the order and each fallback's models. Rate limits that name their reset are waited out (≤ 15 s).
+---
+
+## The problem
+
+Creating an OAuth client ID takes five minutes on every provider. What developers can't predict is **approval**: whether real users can connect today, in a week, or in three months. That depends almost entirely on **which scopes you ask for** (Gmail `gmail.send` is a sensitive-scope review; `gmail.readonly` adds a paid security assessment and ~6 weeks), plus a few provider-specific gates: install caps before listing (HubSpot, Slack), business verification (Meta), per-call billing (X), tenant admin consent (Microsoft).
+
+Provider docs explain each gate in isolation. Nobody tells you, for *your* agent's needs: how long, why, what to start today, and whether you could ship now on Composio's already-approved app instead.
+
+## Scope decision, and why
+
+- **Scope-aware plans, not provider pages.** The unit is "provider × what your agent needs", so the same Gmail guide says *today* for sign-in, *~10 business days* for sending, *5 weeks to 2 months* for reading. Ticking a capability recomputes everything instantly.
+- **A small library done carefully, plus live generation for the long tail.** 100 apps on the board; 16 have full guides (10 hand-researched "golden" providers chosen to be varied: Google, Microsoft, Slack, HubSpot, Salesforce, Meta, LinkedIn, X, Notion, GitHub, and 6 agent-generated). Anything else is investigated on demand and stored, so it's generated once and instant for everyone after.
+- **Managed auth is the launch-today path.** Where Composio runs an approved app, the guide says so first and prices the alternative; where it doesn't, the guide shows exactly what bring-your-own takes and gives the Composio callback URL to register.
+- **Out of scope on purpose:** signing in to provider consoles, creating real apps, or submitting reviews (no paid accounts, and an agent can't prove your identity or record your demo video). The Setup kit prepares everything up to those clicks.
 
 ## How it works
-- **Requirement graph** (`data/graph/*.json`): provider → capability → scopes → review tier → gates → steps, every claim a fact. 10 hand-researched providers (the golden set) + 6 generated. [docs/REQUIREMENT_GRAPH.md](docs/REQUIREMENT_GRAPH.md)
-- **Rules engine** (`lib/engine.ts`): pure TypeScript, recomputes on every tap. Verdict, runway, critical path, gates hit and skipped, priced faster paths, explanations that cite facts. [docs/RULES_ENGINE.md](docs/RULES_ENGINE.md)
-- **Need intake** (`lib/intent.ts`): an app or a sentence, plus three toggles (who connects, how many, registered business) shown only where they change the answer.
-- **Agent pipeline** for unknown apps (`lib/pipeline/run.ts`): Scout → Scope classifier ‖ Gate finder ‖ Prober → Verifier (code quote check, critic, ≤2 re-check rounds). [docs/AGENTS.md](docs/AGENTS.md), [docs/RETRIEVAL.md](docs/RETRIEVAL.md)
-- **Harness** (`npm run eval`): runs the pipeline blind on the golden set and scores it. [docs/HARNESS.md](docs/HARNESS.md)
-- More: [ARCHITECTURE](docs/ARCHITECTURE.md) · [UI_FLOW](docs/UI_FLOW.md) · [VERIFICATION_LOG](docs/VERIFICATION_LOG.md) · [PRODUCT_DECISIONS](docs/PRODUCT_DECISIONS.md) · [DEMO](docs/DEMO.md)
 
-## Setup
+- **Requirement graph** (`data/graph/*.json`, schema in `lib/graph/schema.ts`): provider → capability → scopes → review tier → gates → steps. Every claim is a fact with URL, verbatim quote, checked date and status.
+- **Rules engine** (`lib/engine.ts`, pure TypeScript): verdict, wait range, critical path, gates hit and skipped (with reasons), faster paths, and the Agent / You / Provider runway. Code decides; models never compute the plan.
+- **Live investigation for unknown apps** (`lib/pipeline/run.ts`), five agents streamed as lanes:
+  1. **Scout** finds the official developer docs (search + conventional hosts + the model's pointer) and checks Composio's toolkit page for managed auth.
+  2. **Scope classifier** and **Gate finder** read the fetched pages in parallel and propose capabilities, tiers, gates and steps, each with a quote.
+  3. **Prober** tests the provider live: OIDC discovery, the authorize endpoint with a fake client, dynamic client registration.
+  4. **Verifier** checks every quote against the fetched text in code, has a critic look for contradictions, re-checks weak facts (≤ 2 rounds), and downgrades anything unsupported to Uncertain.
+- **Input gate** (`lib/validate.ts`): nothing is investigated until the input resolves to a real product (library, Composio directory, DNS + homepage, Wikidata, docs search, or Jev). Gibberish gets an answer in < 2 s.
+- **Generate once, share always** (`lib/store.ts`): finished guides are stored in Vercel Blob under a canonical slug ("Xero", "xero.com", "developer.xero.com" are one guide). Concurrent requests for the same new app join one run, across server instances.
+- **Publishing policy** (`lib/publish.ts`): a generated guide is live at once on its own link as *Draft*; it reaches the public board as *Verified by checks* only if ≥ 80% of quotes matched the source, no contradiction is unresolved, every gate fact is Sourced/Tested, and every gate cites the provider's own docs.
+- **Setup kit** (`lib/kit.ts`): redirect URIs, scope list, scope justification, privacy-policy checklist, demo-video shot list, an email to the provider, and a coding-agent handoff, built from the guide and your selection.
+
+More: [ARCHITECTURE](docs/ARCHITECTURE.md) · [AGENTS](docs/AGENTS.md) · [RULES_ENGINE](docs/RULES_ENGINE.md) · [REQUIREMENT_GRAPH](docs/REQUIREMENT_GRAPH.md) · [RETRIEVAL](docs/RETRIEVAL.md) · [HARNESS](docs/HARNESS.md) · [VERIFICATION_LOG](docs/VERIFICATION_LOG.md) · [PRODUCT_DECISIONS](docs/PRODUCT_DECISIONS.md) · [UI_FLOW](docs/UI_FLOW.md) · [DEMO](docs/DEMO.md)
+
+## Tested vs sourced vs uncertain
+
+| Label | Meaning | Example |
+|---|---|---|
+| **Tested** | We probed it live from the server (public, unauthenticated) | Google's authorize endpoint rejects an unknown client; Composio's Pipedrive toolkit page says managed OAuth is not available |
+| **Sourced** | A verbatim quote was found on the cited page when it was fetched | "Please note the user cap applies over the entire lifetime of the project, and it cannot be reset" (Google) |
+| **Uncertain** | Our estimate, or a claim we couldn't quote | Review times providers don't publish (GitHub Marketplace, Notion Marketplace) |
+
+The 10 golden providers hold 89 facts: 38 Tested, 33 Sourced, 18 Uncertain. Weak facts are downgraded, never deleted, so waits err long.
+
+### Checked against real sources (sample)
+- **Corrected:** the brief's "gmail.send + metadata skips CASA" is wrong: `gmail.metadata` is *restricted* (quoted from Google's scope page). The engine suggests `gmail.send` and the Gmail add-on scope instead.
+- **Corrected:** Docusign's "20 successful API calls" Go-Live rule was removed in October 2025.
+- **Corrected:** an X post containing a URL costs $0.20, not "a bit more"; free credits are $20 plus up to $50 matched.
+- **Corrected (2026-11-02):** the Zoom "private apps need no review" fact cited a page that now 404s; replaced with Zoom's Publish page and its quote.
+- **Confirmed:** Slack 10 active installs before Marketplace review; HubSpot 10 / 25 / unlimited installs; Google brand verification 2–3 business days, restricted scopes ~6 weeks plus an annual assessment; Composio has no managed X app.
+- **Can't be fully verified:** Google's "~10 business days" for sensitive scopes. The quote was captured from the JS-rendered FAQ; a plain fetch shows only the questions. Kept, labelled approximate.
+- **Can't be read from a server:** Meta and Salesforce help pages (HTTP 400/403 to non-browsers). Those facts are labelled Uncertain or rest on a quoted third-party guide.
+- **Caught by the new publishing check:** two generated guides (Zomato, Google Contacts) had passed the quote checks while citing the wrong company's docs (Google verification pages for Zomato; Gmail CASA rules for Contacts). They are now Draft and off the board.
+
+Full log: [docs/VERIFICATION_LOG.md](docs/VERIFICATION_LOG.md).
+
+## Results
+
+| What | Result |
+|---|---|
+| Library guides audited on production (desktop 1440 and a 390 px phone at 4× CPU / Fast 3G) | 16/16: no console or hydration errors, no overflow, Copy link reopens the same state in a fresh browser, Setup kit complete |
+| Source links in the library (HEAD/GET) | 142 checked; 1 dead (Zoom, fixed); the rest are live or bot-blocked (Salesforce 403, Shopify 406, Google 429) |
+| Live generation on production, unfamiliar apps (2026-11-02) | Pipedrive 83 s · Miro 97 s (two browsers at once, one shared run) · `https://webflow.com` 99 s · FreshBooks 86 s (2026-11-01) |
+| Harness on the 10 golden providers (`npm run eval`, blind) | 10/10 completed, gate recall 65%, quote-match 74% before re-check, median 56 s ([HARNESS](docs/HARNESS.md)) |
+| Fabricated quotes injected by the fault harness | caught 9/9 |
+| Tests | `npm test` 114 unit/integration; `npm run e2e` 16 browser tests (14 on production, 2 need the fake pipeline) |
+
+## Setup (run locally)
+
 ```bash
 npm install
-npm run dev            # http://localhost:3000
-npm test               # engine, verifier, provider layer, pipeline (mocked), URL state
+npm run dev                      # http://localhost:3000 — library guides work with no keys
+npm test                         # engine, verifier, store, publishing, gate, pipeline (mocked models)
 npm run typecheck
-npm run eval -- --mock --faults   # harness with the heuristic mock model, no key
+npm run eval -- --mock --faults  # harness with a heuristic mock model, no key
 ```
 
-## Environment
+Live investigation needs one model key. Copy the names you use into `.env.local` (never commit it):
+
 | Variable | Purpose |
 |---|---|
-| `LLM_BASE_URL` | OpenAI-compatible endpoint, e.g. `https://gate.joingonka.ai/v1` (third in the default order) |
-| `LLM_API_KEY` | its key |
-| `LLM_MODEL` | model id, or a comma list in preference order |
-| `LLM_HEDGE_MS` | start the gateway's next model if the current one hasn't answered (default 10000; other providers: `MODEL_HEDGE_MS`, default 25000) |
-| `MODEL_ORDER` | provider order, comma list of `gemini`, `groq`, `llm`, `openrouter` (default `gemini,groq,llm,openrouter`) |
-| `LLM_PROVIDER_HEDGE_MS`, `PROVIDER_HEDGE_MS` | start the next provider in parallel after this long (defaults 20000 for `LLM_*`, 40000 for the others) |
-| `LLM_AUTO_FALLBACK` | `0` to stop using the endpoint's other listed models as fallbacks |
-| `LLM_TOKEN_BUDGET` | per-investigation token cap (default 120000) |
-| `LLM_MAX_TOKENS` | max output tokens per call (default 2500) |
-| `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY` | providers, see `MODEL_ORDER`. `GEMINI_MODEL`, `GROQ_MODEL`, `OPENROUTER_MODEL` override the default model lists; `GEMINI_THINKING_BUDGET` (default 0) for 2.5-flash |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob store connected to the project: shared guide store. Unset = per-instance memory (reported in `/api/status → store`). `BLOB_ACCESS=private` if the store is private (auto-detected otherwise) |
-| `TYPESAFE_API_KEY` | optional: Jev typed decisions (scope tier, quote-supports-claim, need → capabilities). Unset = LLM/rules path. `TYPESAFE_MODEL` (default `jev-latest`), `JEV_TIMEOUT_MS` (6000), `JEV_DISABLE=1` |
-| `FIRECRAWL_API_KEY` | optional: JS-rendered scrape + search for the Scout's picked pages. `FIRECRAWL_MAX_PAGES` per run (default 6) |
-| `JINA_API_KEY`, `RETRIEVAL_JINA` | optional key for Jina Reader (free fallback, anonymous by default); `RETRIEVAL_JINA=0` turns it off |
+| `GEMINI_API_KEY` / `GROQ_API_KEY` / `OPENROUTER_API_KEY` | Model providers, tried in that order with hedging (`MODEL_ORDER` overrides; `/api/status` shows the active order) |
+| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | Any OpenAI-compatible endpoint (optional) |
+| `BLOB_READ_WRITE_TOKEN` or `BLOB_STORE_ID` | Vercel Blob for the shared guide store; unset = this server's memory only |
+| `FIRECRAWL_API_KEY` | Optional JS-rendered fetch + search for the Scout |
+| `TYPESAFE_API_KEY` | Optional Jev typed decisions (scope tier, quote supports claim, need → capabilities) |
 
-`/api/status` reports which provider is primary, the active `order` (and `orderFrom`: default or MODEL_ORDER), per-provider hedges, whether Jev, Firecrawl and Blob persistence are configured, how many guides are stored/verified, never a key. `/api/store` lists stored guides (for the command bar). Ready guides, the engine and the probes need no key.
+Browser tests: `GREENLIGHT_FAKE_PIPELINE=1 npx next build && npx next start -p 3100`, then `npm run e2e` (system Chromium at `/usr/bin/chromium`). `E2E_BASE=<url> npm run e2e` runs them against a deployment. Never set `GREENLIGHT_FAKE_PIPELINE` in production.
 
-## Decisions
-- Code decides, models assist. The plan is computed; models only propose facts, and a fact without a matching quote is downgraded.
-- Our own retrieval, no provider grounding: the verifier must see the same text the model saw.
-- No database server: curated graphs are versioned JSON; generated graphs are JSON blobs in Vercel Blob (one file per app + its trace). Share links stay short because the guide lives at its slug.
-- No accounts: "Your apps" lives in the browser. A sign-up wall would cost more demo users than it's worth; future = the Composio account.
-- Defaults are the honest worst case (public users, >100, registered business); toggles show the shortcuts.
-- Weak facts are downgraded, not deleted, so the runway errs long.
+## Key decisions
+
+- **Code decides, models assist.** The plan is computed from the graph; models only propose facts, and a fact without a matching quote is downgraded.
+- **Our own retrieval, no provider "grounding".** The verifier must see exactly the text the model saw.
+- **Honest worst case by default** (public users, more than 100, registered business). Toggles appear only where they change the answer.
+- **No accounts, no database server.** Curated graphs are versioned JSON; generated ones are blobs. "Your apps" lives in the browser.
+- **Draft until checks pass.** "Verified" means automatic checks passed, not that a person reviewed it; "Curated" is the hand-researched badge.
 
 ## Limitations
-- The gateway models measured on 2026-11-01 were slow (DeepSeek-V4-Flash ~2–3 tokens/s, GLM-5.3-Flash ~7, MiniMax-M2.7 ~100+). A live investigation takes 2–5 minutes; the provider layer hedges across models to keep it under Vercel's 300s limit.
-- HTML search from datacenter IPs is weak (see RETRIEVAL). JS-rendered docs (Meta, Salesforce help) can't be read.
-- Generated graphs are labelled Draft until every automatic check passes; Verified means the checks passed, not that a person reviewed it. Curated waits that providers don't publish are our estimates, marked Uncertain.
-- Not legal or provider advice.
 
+- Generated guides are only as good as the docs the server can read: JS-only or bot-blocked docs (Meta, Salesforce help) give thin results, and the scope classifier is the weakest stage (17% tier accuracy on the harness).
+- Waits that providers don't publish are our estimates, labelled Uncertain. Review queues change; the guide shows when each fact was checked.
+- The agents never sign in, create real apps or submit reviews; probes are public and unauthenticated.
+- Free-tier models rate-limit: a live run takes about 1.5 minutes and can take up to ~5. Each IP can start 20 new investigations per hour.
+- The cross-instance run lock is best effort (read-then-write on Blob, no compare-and-swap).
+- Not legal or provider advice; check the sources before you submit.
 
-## v4.1: fast clicks, input gate, model order (2026-11-01)
+## Next
 
-**Click latency.** Clicking a board row froze the page for ~4 s. Root cause: the row click ran `router.push` inside
-`document.startViewTransition`, whose update callback waited for the new title in a `requestAnimationFrame` loop; the
-navigation never committed while the view transition held rendering, so Chrome aborted it after its 4 s DOM-update
-timeout ("Transition was aborted because of timeout in DOM update") and only then painted the guide. The guide route
-was also `force-dynamic` (no prefetch, a server round trip on every click). Fixes: plain `<Link>` navigation (no view
-transition), the 16 library guides statically prerendered (`generateStaticParams`, ISR 60 s; other slugs cached on
-first request), the need / `?q=` read in the browser after hydration so the HTML can be cached, viewport prefetch for
-ready rows and hover/touch prefetch for on-demand rows, a pressed row state painted on pointerdown,
-`app/guide/[slug]/loading.tsx` skeleton, Setup kit split out of the guide's first-load JS, and a slimmer 100-app list
-in the header's payload. `npm run e2e` measures click → feedback and click → guide on desktop and on a throttled phone.
-
-**Input gate** (`lib/validate.ts`, `GET /api/check?q=`, enforced again in `/api/generate`). Before any investigation:
-normalise; reject empty / too short / keyboard mash; library, store, Composio directory or a need sentence → open
-that; otherwise the name must resolve to a real product within ~1.6 s — domain input: DNS + homepage; names: Wikidata
-describes it as software, a developer host for `<name>.com` resolves (wildcard DNS excluded), a fast search finds its
-official developer docs, or Jev (when `TYPESAFE_API_KEY` is set) says it is a product with an API. Otherwise:
-`Couldn't find an app called "asdfgh". Try a product name or its website.` plus the nearest library names.
-
-**Measured** (headless Chromium, production https://oauth-greenlight-v2.vercel.app, click on a board row → guide):
-
-| | before (bb4020f) | after (319ff08) |
-|---|---|---|
-| desktop: click → guide on screen | 4,042–4,053 ms (page frozen, then "Transition was aborted because of timeout in DOM update") | 72–130 ms; pressed state in 6–21 ms |
-| phone (390 px, CPU 4×, Fast 4G): click → guide | 4,102–4,116 ms (same freeze) | 286–636 ms; pressed state in 32–76 ms (one full-suite outlier at 115 ms) |
-| network after click | RSC fetch 258–278 ms + 2 JS chunks | none (prefetched) |
-| `/guide/gmail` | `force-dynamic`, x-vercel-cache MISS | SSG + ISR, x-vercel-cache HIT |
-
-Gate on production: `asdfgh` → rejected in 13 ms server time (0.48 s round trip); `FreshBooks` → Jev 0.96 (0.65 s);
-`xero.com` → Composio directory (0.28 s); the Gmail need sentence → `/guide/gmail?need=draft,read` (0.31 s).
-New model order on production: one fresh investigation (FreshBooks, not previously stored) finished in **86 s**
-(Xero under the old order: 281 s), all model calls on Gemini/Groq (1.4–7.5 s each), the `LLM_*` gateway never called.
+1. Grow the library to 100 full guides by running the pipeline in batch and promoting only Verified guides, with a weekly re-check that diffs facts and flags changes.
+2. Feed real outcomes back: let developers mark "approved in N days" so waits come from data, not estimates.
+3. Inside Composio: open the guide from a toolkit's "bring your own app" screen, pre-filled with the toolkit's scopes and callback.
+4. Signed-in assisted setup where a provider allows it (dynamic client registration, Slack app manifests), with the user approving each step.

@@ -27,6 +27,11 @@ Curated graphs, rebuilt 2026-11-01 by `scripts/build-graph.ts`: every source was
 | v2: X "a bit more with a link" | $0.20 per post containing a URL (v2 correction, kept) |
 | v2: Docusign Go-Live needs 20 API calls | Removed Oct 2025 (v2 correction, kept) |
 
+## Pre-submission audit (2026-11-02)
+- **All library source links checked** (142 unique URLs, HEAD then GET with a browser user agent). One was dead: Zoom's "Key concepts" page (404) behind the claim "unpublished apps work inside your own account without review". Replaced with Zoom's Publish page, which says so verbatim ("These apps are intended for internal use and don't require the standard Marketplace review"); the fact moved from Uncertain to Sourced. The other non-200s are bot blocks (Salesforce 403, Shopify dashboard 406, Google Help 429 to a datacenter IP) or OAuth endpoints probed on purpose (authorize URLs answer 400 without a client).
+- **Generated guides on the shared store re-read by hand.** Two had been promoted to Verified while built from the wrong company's docs: Zomato (every gate cited Google's OAuth verification pages; Zomato has no public OAuth API) and Google Contacts (a Gmail CASA gate cited from a Nylas page). A fourth publishing check now requires every gate to cite a page on the provider's own domain, and it is applied when stored guides are read, so both are Draft and off the board. "capiclan" (a consultancy, investigated before the input gate existed, built as a Google guide) is withdrawn from the store.
+- Google's "~10 business days" for sensitive scopes: the quote came from the JS-rendered FAQ table; a plain fetch of the page now shows only the questions, so it can't be re-checked without a rendering fetch. Still shown, labelled approximate.
+
 ## Unverified (stay Uncertain)
 - Meta / Instagram official docs return HTTP 400 to non-browser clients. Instagram facts rest on a third-party guide (ugcapi.dev, quoted) and are labelled as such.
 - Salesforce help articles are client-rendered; AppExchange security review timing and fee are unquoted.

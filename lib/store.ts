@@ -130,7 +130,7 @@ const tracePath = (id: string) => `traces/${id}.json`;
 /** Stored guides withdrawn from the store, with why. They stop resolving (board, command bar, /guide/<slug>, API)
     without touching the blob, so this is reversible. A withdrawn name that is typed again goes through the input gate. */
 export const RETIRED: Record<string, string> = {
-  capiclan: "Not a product: investigated before the input gate existed (2026-11-01), and the agent built a Google guide for it.",
+  capiclan: "A stock-market consultancy with no public OAuth API. Investigated before the input gate existed (2026-11-01), the run built a Google guide for it and the old checks marked it Verified.",
 };
 
 function parseRecord(raw: string | null): StoredGuide | null {
