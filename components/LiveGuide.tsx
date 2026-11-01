@@ -1,4 +1,5 @@
 "use client";
+import { suggestLead } from "@/lib/checkClient";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProviderGraph, type FactStatus, type Profile } from "@/lib/graph/schema";
@@ -43,8 +44,9 @@ export default function LiveGuide({ slug, name: name0, q: q0, composioSlug: cs0,
   const [trace, setTrace] = useState<Trace | undefined>();
   const [lanes, setLanes] = useState<Record<StageId, Lane>>(fresh);
   const [state, setState] = useState<"idle" | "running" | "done" | "error">(stored ? "done" : "idle");
-  const [error, setError] = useState<{ code?: string; message: string; suggestions?: { slug: string; name: string; href: string }[] }>();
+  const [error, setError] = useState<{ code?: string; message: string; suggestions?: { slug: string; name: string; href: string; near?: boolean }[] }>();
   const [elapsed, setElapsed] = useState(0);
+  const [waiting, setWaiting] = useState<string | undefined>();
   const [run, setRun] = useState(0);
   const t0 = useRef(0);
   const { flash, node: toast } = useToast();
@@ -58,7 +60,7 @@ export default function LiveGuide({ slug, name: name0, q: q0, composioSlug: cs0,
     }
     let cancelled = false;
     const recheck = run > 0;
-    setError(undefined); setState("running"); setLanes(fresh()); setTrace(undefined);
+    setError(undefined); setState("running"); setLanes(fresh()); setTrace(undefined); setWaiting(undefined);
     if (!recheck) setGraph(null);
     t0.current = Date.now();
     setElapsed(0);
@@ -104,6 +106,7 @@ export default function LiveGuide({ slug, name: name0, q: q0, composioSlug: cs0,
               setTrace(ev.trace);
               try { localStorage.setItem(`gl:trace:${ev.trace.id}`, JSON.stringify(ev.trace)); } catch {}
             } else if (ev.type === "notice") flash(ev.message);
+            else if (ev.type === "waiting") setWaiting(ev.message);
             else if (ev.type === "error") { setError({ code: ev.code, message: ev.message, suggestions: ev.suggestions }); setState("error"); finished = true; }
           }
         }
@@ -117,7 +120,7 @@ export default function LiveGuide({ slug, name: name0, q: q0, composioSlug: cs0,
 
   const notApp = error?.code === "not_an_app";
   const showPanel = !notApp && (state === "running" || state === "error" || (state === "done" && !!trace));
-  const panel = showPanel ? <Investigation lanes={lanes} state={state} elapsed={elapsed} error={error} onRetry={error && error.code !== "no_model" ? () => setRun((n) => n + 1) : undefined} collapsed={state === "done"} /> : null;
+  const panel = showPanel ? <Investigation lanes={lanes} state={state} elapsed={elapsed} error={error} waiting={state === "running" ? waiting : undefined} onRetry={error && error.code !== "no_model" && error.code !== "rate_limited" ? () => setRun((n) => n + 1) : undefined} collapsed={state === "done"} /> : null;
   const onRecheck = () => setRun((n) => n + 1);
 
   if (graph)
@@ -139,12 +142,15 @@ export default function LiveGuide({ slug, name: name0, q: q0, composioSlug: cs0,
           <div className="mt-4 max-w-[820px]" role="alert" data-rejected="">
             <p className="text-[18px] leading-snug sm:text-[21px]"><span className="font-semibold">Nothing to investigate.</span> <span className="text-ink-2">{error?.message}</span></p>
             {!!error?.suggestions?.length && (
-              <p className="mt-3 flex flex-wrap items-center gap-2 text-[14px] text-ink-3">Did you mean {error.suggestions.map((s) => <a key={s.slug} href={s.href} className="chip">{s.name}</a>)}</p>
+              <p className="mt-3 flex flex-wrap items-center gap-2 text-[14px] text-ink-3">{suggestLead(error.suggestions)} {error.suggestions.map((s) => <a key={s.slug} href={s.href} className="chip">{s.name}</a>)}</p>
             )}
             <p className="mt-4 text-[14px]"><a href="/" className="underline underline-offset-4">Back to all apps</a></p>
           </div>
         ) : state === "error" ? (
-          <p className="mt-4 max-w-[820px] text-[18px] leading-snug sm:text-[21px]"><span className="font-semibold">No plan yet.</span> <span className="text-ink-2">{error?.message}</span></p>
+          <div className="mt-4 max-w-[820px]" data-error={error?.code || ""}>
+            <p className="text-[18px] leading-snug sm:text-[21px]"><span className="font-semibold">{error?.code === "rate_limited" ? "Hourly limit reached." : "No plan yet."}</span> <span className="text-ink-2">{error?.message}</span></p>
+            {error?.code === "rate_limited" && <p className="mt-3 text-[14px]"><a href="/" className="underline underline-offset-4">Browse the guides that are ready</a></p>}
+          </div>
         ) : (
           <p className="mt-4 max-w-[820px] text-[18px] leading-snug text-ink-2 sm:text-[21px]">Reading {name}&apos;s docs and testing its endpoints. Every quote is checked against its source before it reaches the plan, and the finished guide is saved so nobody has to wait for it again.</p>
         )}
@@ -165,7 +171,7 @@ function Skeleton() {
   );
 }
 
-function Investigation({ lanes, state, elapsed, error, onRetry, collapsed }: { lanes: Record<StageId, Lane>; state: string; elapsed: number; error?: { code?: string; message: string }; onRetry?: () => void; collapsed?: boolean }) {
+function Investigation({ lanes, state, elapsed, error, waiting, onRetry, collapsed }: { lanes: Record<StageId, Lane>; state: string; elapsed: number; error?: { code?: string; message: string }; waiting?: string; onRetry?: () => void; collapsed?: boolean }) {
   const [open, setOpen] = useState(!collapsed);
   useEffect(() => setOpen(!collapsed), [collapsed]);
   const doneCount = LANES.filter((l) => ["done", "warn", "skipped"].includes(lanes[l.id].status)).length;
@@ -181,6 +187,7 @@ function Investigation({ lanes, state, elapsed, error, onRetry, collapsed }: { l
         </span>
       </button>
       <div className="h-[2px] bg-shade"><div className="h-full bg-signal transition-[width] duration-300" style={{ width: `${(doneCount / 5) * 100}%` }} /></div>
+      {waiting && <p data-waiting="" className="flex items-start gap-2 border-b rule bg-amber-wash px-4 py-2.5 text-[13.5px] text-ink sm:px-5"><span className="live-dot mt-1.5 shrink-0" aria-hidden /><span>{waiting}</span></p>}
       <Collapse open={open}>
         <div className="grid border-t rule md:grid-cols-5">
           {LANES.map((l, i) => <LaneView key={l.id} l={l} lane={lanes[l.id]} first={i === 0} />)}

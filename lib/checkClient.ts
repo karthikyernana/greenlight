@@ -2,7 +2,7 @@
    gets an answer in under 2 s instead of a multi-minute run. The server enforces the same gate in /api/generate. */
 export type ClientCheck =
   | { ok: true; href: string; app: string; via: string }
-  | { ok: false; message: string; suggestions: { slug: string; name: string; href: string }[] };
+  | { ok: false; message: string; suggestions: { slug: string; name: string; href: string; near?: boolean }[] };
 
 /** null = the check itself could not run (network); the caller may proceed and let the server decide. */
 export async function checkQuery(q: string, timeoutMs = 3500): Promise<ClientCheck | null> {
@@ -20,3 +20,6 @@ export async function checkQuery(q: string, timeoutMs = 3500): Promise<ClientChe
     clearTimeout(t);
   }
 }
+
+/** "Did you mean" only when the suggestions are close spellings; otherwise they are just popular guides. */
+export const suggestLead = (s: { near?: boolean }[]) => (s.some((x) => x.near) ? "Did you mean" : "Ready guides:");

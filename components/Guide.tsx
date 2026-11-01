@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Fact, Need, Profile, ProviderGraph } from "@/lib/graph/schema";
 import { DEFAULT_PROFILE } from "@/lib/graph/schema";
-import { plan, planFacts, TIER_LABEL, TIER_HINT, defaultCaps, cleanCaps, BUSINESS_FACT, type PlanStep, type ToggleKey } from "@/lib/engine";
+import { plan, planFacts, dedupeFacts, TIER_LABEL, TIER_HINT, defaultCaps, cleanCaps, BUSINESS_FACT, type PlanStep, type ToggleKey } from "@/lib/engine";
 import { graphToGuide } from "@/lib/graph/adapt";
 import { needHref, parseNeed, parseProfile } from "@/lib/urlstate";
 import { fmtEffort } from "@/lib/plan";
@@ -82,7 +82,7 @@ export default function Guide({ graph, publish, initialNeed, trace, live, meta, 
   const copy = async () => { await copyText(shareUrl()); flash("Link copied with your choices"); };
 
   const agentCan = p.steps.filter((s) => s.owner !== "you").length;
-  const usedFacts = useMemo(() => planFacts(graph, p), [graph, p]);
+  const usedFacts = useMemo(() => dedupeFacts(planFacts(graph, p)), [graph, p]);
   const counts = { tested: usedFacts.filter((f) => f.status === "tested").length, sourced: usedFacts.filter((f) => f.status === "sourced").length, uncertain: usedFacts.filter((f) => f.status === "uncertain").length };
   const dcr = graph.probes.some((x) => /dynamic client registration/i.test(x.result));
   const bestSave = p.suggestions.filter((s) => s.kind !== "composio")[0];

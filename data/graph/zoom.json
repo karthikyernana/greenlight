@@ -194,12 +194,11 @@
   {
    "id": "cap-own",
    "claim": "Your own account's meetings & recordings: Unpublished apps work for users in your Zoom account without review",
-   "url": "https://developers.zoom.us/docs/platform/key-concepts/",
-   "title": "Zoom: Key concepts (private vs published apps)",
-   "quote": "",
-   "checked": "2026-10-30",
-   "status": "uncertain",
-   "note": "Cited in hand research; no verbatim quote captured yet"
+   "url": "https://developers.zoom.us/docs/build-flow/publish/",
+   "title": "Zoom Developer Docs: Publish (audience)",
+   "quote": "Users within my Zoom account can discover and install the app only if they belong to your Zoom account. These apps are intended for internal use and don't require the standard Marketplace review.",
+   "checked": "2026-11-02",
+   "status": "sourced"
   },
   {
    "id": "cap-external",

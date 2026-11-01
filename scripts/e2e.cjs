@@ -389,6 +389,10 @@ async function t(name, fn, { skip } = {}) {
     if (new URL(p.url()).pathname !== "/") throw new Error(`navigated to ${p.url()}`);
     const sugg = await p.$$eval("[data-rejected] a", (a) => a.length);
     if (!sugg) throw new Error("no suggestions shown");
+    // once rejected, the bar stops offering to investigate it, and unrelated suggestions aren't called "Did you mean"
+    if (await p.$$eval("#cmd-results a", (a) => a.some((x) => /Investigate/.test(x.textContent)))) throw new Error("still offers to investigate a rejected name");
+    const lead = await p.$eval("[data-rejected]", (e) => e.textContent);
+    if (/Did you mean/.test(lead)) throw new Error(`'Did you mean' for unrelated names: ${lead.slice(0, 120)}`);
     await audit(p, "rejected");
     await close(p);
     // a direct URL is gated on the server too

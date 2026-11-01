@@ -9,6 +9,7 @@ import { docCandidates, firecrawlConfigured, host, makeRetriever, rankPassages, 
 import { jevConfigured, jevSupport, jevTiers, type Decision } from "../jev";
 import { checkQuote } from "../quote";
 import { slugify } from "../urlstate";
+import { normaliseOwner } from "../engine";
 import { ScoutOut, ScopesOut, GatesOut, CriticOut, RecheckOut } from "./schemas";
 import type { CriticOut as CriticOutT } from "./schemas";
 import { newTraceId, saveTrace, type Trace, type ToolCall } from "./trace";
@@ -454,7 +455,7 @@ function assemble(a: {
     const w = s.waitDays.map((x) => Math.max(0, Math.min(365, Number(x) || 0)));
     const wmin = w[0] || 0, wmax = Math.max(wmin, w[1] ?? wmin);
     return {
-      id: kebab(s.id, i), title: s.title, detail: s.detail, owner: s.owner, agent: s.agent, human: s.human, effortMin: Math.min(2400, Math.max(1, s.effortMin)),
+      id: kebab(s.id, i), title: s.title, detail: s.detail, owner: normaliseOwner(s), agent: s.agent, human: s.human, effortMin: Math.min(2400, Math.max(1, s.effortMin)),
       wait: [wmin, wmax] as [number, number], dependsOn: s.dependsOn.map((d) => kebab(d, 0)).filter((d) => stepIds.has(d)),
       base: !s.gate || !gateIds.has(kebab(s.gate, 0)), facts: [a.stepFact.get(s.id)].filter(Boolean) as string[], skip: [],
     };

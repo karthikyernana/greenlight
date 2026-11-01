@@ -12,6 +12,7 @@ import { useStored } from "./useStored";
 import { CmdRowView } from "./CommandList";
 import { useFlip } from "./motion";
 import { checkQuery, type ClientCheck } from "@/lib/checkClient";
+import { suggestLead } from "@/lib/checkClient";
 import { Icon, Seg, StatusBadge } from "./ui";
 import Shelf from "./Shelf";
 
@@ -27,7 +28,6 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
   const [sort, setSort] = useState<Sort>("wait");
   const [hi, setHi] = useState(0);
   const [checking, setChecking] = useState(false);
-  const [rejected, setRejected] = useState<Extract<ClientCheck, { ok: false }> | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const initialStored = useMemo<StoredLite[]>(() => [...index.filter((e) => e.stored), ...drafts].map((e) => ({ slug: e.slug, name: e.name, domain: e.domain, status: e.status || "draft" })), [index, drafts]);
@@ -51,7 +51,10 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
   }, [index, filter, sort]);
 
   const intent = useMemo(() => (q.trim().split(/\s+/).length >= 3 ? parseIntent(q, intents) : null), [q, intents]);
-  const results = useMemo(() => (intent ? [] : commandRows(index, stored, q, 8)), [index, stored, q, intent]);
+  const all = useMemo(() => (intent ? [] : commandRows(index, stored, q, 8)), [index, stored, q, intent]);
+  const [rejected, setRejected] = useState<Extract<ClientCheck, { ok: false }> | null>(null);
+  // once the gate says it isn't an app, stop offering to investigate it
+  const results = useMemo(() => (rejected ? all.filter((r) => r.kind !== "investigate") : all), [all, rejected]);
   const typing = q.trim().length > 0;
   useEffect(() => { setHi(0); setRejected(null); }, [q]);
   useFlip(listRef, [filter, sort, typing]);
@@ -76,7 +79,7 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
       else if (r) router.push(r.href);
     }
   };
-  const enterHint = checking ? "checking…" : intent ? "plan it" : results[hi]?.kind === "investigate" ? "investigate" : "open";
+  const enterHint = checking ? "checking…" : intent ? "plan it" : results[hi]?.kind === "investigate" ? "investigate" : results[hi] ? "open" : rejected ? "not found" : "open";
 
   return (
     <main data-home="" className="mx-auto max-w-[1180px] px-4 sm:px-6">
@@ -125,13 +128,13 @@ export default function Board({ index, drafts = [], intents, jev = false }: { in
               <div role="alert" data-rejected="" className="border-b rule px-4 py-3 text-[14px]">
                 <p className="text-ink">{rejected.message}</p>
                 {rejected.suggestions.length > 0 && (
-                  <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[13px] text-ink-3">Did you mean
+                  <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[13px] text-ink-3">{suggestLead(rejected.suggestions)}
                     {rejected.suggestions.map((s) => <Link key={s.slug} href={s.href} className="badge hover:text-ink">{s.name}</Link>)}
                   </p>
                 )}
               </div>
             )}
-            {results.length === 0 && !intent && <p className="px-4 py-3 text-[14px] text-ink-3">No match.</p>}
+            {results.length === 0 && !intent && !rejected && <p className="px-4 py-3 text-[14px] text-ink-3">No match.</p>}
             {intent && <p className="px-4 py-3 text-[14px] text-ink-2">Press <span className="kbd">↵</span> to plan {intent.app || "it"} for exactly this.</p>}
             {results.map((r, i) => (
               <Link key={r.href + i} href={r.href} prefetch={r.kind === "investigate" ? false : undefined} data-flip={`r-${r.href}`} role="option" aria-selected={i === hi} onMouseEnter={() => setHi(i)}

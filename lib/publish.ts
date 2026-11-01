@@ -4,12 +4,14 @@
        1. ≥ 80% of the specialists' quotes were found in the fetched source text (code check, before re-checks);
        2. no unresolved contradiction (every fact the critic flagged was confirmed or corrected on re-check);
        3. every gate fact is Sourced or Tested (each gate cites ≥ 1 fact, and none of those facts is Uncertain);
+       4. every gate cites at least one page on the provider's own domain (so a guide built from another company's
+          docs, e.g. Google's verification FAQ for an app that isn't Google, can't be promoted);
    - otherwise it stays Draft and the failed checks are listed on the guide.
    "Curated" (hand-researched) is a separate badge and is never computed. */
 import type { ProviderGraph } from "./graph/schema";
 
 export type PublishStatus = "curated" | "verified" | "draft";
-export type PublishCheck = { id: "quotes" | "contradictions" | "gates"; label: string; pass: boolean; detail: string };
+export type PublishCheck = { id: "quotes" | "contradictions" | "gates" | "sources"; label: string; pass: boolean; detail: string };
 export type PublishVerdict = { status: PublishStatus; checks: PublishCheck[]; failed: string[]; at: string };
 export type VerifierStats = { checked: number; quoteMatched: number; unresolved?: number; criticIssues?: number };
 
@@ -65,7 +67,47 @@ export function publishVerdict(g: ProviderGraph, v?: VerifierStats, now = new Da
     id: "gates", label: "Every gate fact Sourced or Tested", pass: problems.length === 0,
     detail: problems.length ? problems.slice(0, 3).join("; ") + (problems.length > 3 ? ` (+${problems.length - 3})` : "") : g.gates.length ? `${g.gates.length} gate${g.gates.length > 1 ? "s" : ""}, all backed` : "no gates found",
   };
-  const checks = [quotes, contradictions, gates];
+  const checks = [quotes, contradictions, gates, sourceCheck(g)];
   const failed = checks.filter((c) => !c.pass).map((c) => `${c.label}: ${c.detail}`);
   return { status: failed.length ? "draft" : "verified", checks, failed, at };
+}
+
+const hostOf = (u: string) => { try { return new URL(u).hostname.toLowerCase().replace(/^www\./, ""); } catch { return ""; } };
+/** "developers.pipedrive.com" → "pipedrive"; "xero.com" → "xero"; "app.co.uk" style suffixes are handled loosely. */
+export function brandLabel(host: string): string {
+  const parts = host.split(".").filter(Boolean);
+  if (parts.length < 2) return parts[0] || "";
+  const sld = parts[parts.length - 2];
+  return /^(co|com|net|org|gov|ac)$/.test(sld) && parts.length >= 3 ? parts[parts.length - 3] : sld;
+}
+/** Is this URL the provider's own page? Same brand label as the provider's domain or console, anywhere in the host
+    (pipedrive.readme.io counts for pipedrive.com, docs.dropboxapi.com for dropbox.com). */
+export function isProviderUrl(g: Pick<ProviderGraph, "domain" | "console">, url: string): boolean {
+  const h = hostOf(url);
+  if (!h) return false;
+  const brands = [hostOf(`https://${g.domain}`), hostOf(g.console || "")].map(brandLabel).filter((b) => b.length >= 2);
+  // exact label (pipedrive.readme.io, developers.xero.com) or the brand plus a short suffix (dropboxapi.com, googleapis.com)
+  return brands.some((b) => h.split(/[.-]/).some((l) => l === b || (b.length >= 4 && l.startsWith(b) && l.length - b.length <= 4)));
+}
+
+/** Check 4: each gate stands on at least one of the provider's own pages. */
+export function sourceCheck(g: ProviderGraph): PublishCheck {
+  const facts = new Map(g.facts.map((f) => [f.id, f]));
+  const off: string[] = [];
+  for (const [gid, ids] of gateFactIds(g)) {
+    if (!ids.some((id) => { const f = facts.get(id); return !!f?.url && isProviderUrl(g, f.url); })) off.push(g.gates.find((x) => x.id === gid)?.label || gid);
+  }
+  return {
+    id: "sources", label: "Gates cite the provider's own docs", pass: off.length === 0,
+    detail: off.length ? `${off.length} of ${g.gates.length} gate${g.gates.length > 1 ? "s" : ""} cite no ${g.domain} page (${off.slice(0, 2).join("; ")}${off.length > 2 ? "…" : ""})` : g.gates.length ? `all ${g.gates.length} on ${g.domain}` : "no gates found",
+  };
+}
+
+/** Guides stored before check 4 existed get it applied when read, so an older "Verified" can drop to Draft. */
+export function withSourceCheck(p: PublishVerdict, g: ProviderGraph): PublishVerdict {
+  if (p.status === "curated" || p.checks.some((c) => c.id === "sources")) return p;
+  const c = sourceCheck(g);
+  const checks = [...p.checks, c];
+  const failed = c.pass ? p.failed : [...p.failed, `${c.label}: ${c.detail}`];
+  return { ...p, checks, failed, status: failed.length ? "draft" : p.status };
 }

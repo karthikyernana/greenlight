@@ -21,7 +21,8 @@ import { parseIntent, type IntentIndex } from "./intent";
 import { firecrawlConfigured, firecrawlSearch, webSearch, type Hit } from "./retrieval";
 import { jevAsk, jevConfigured, NOUL_YES } from "./jev";
 
-export type Suggestion = { slug: string; name: string; href: string };
+export type Suggestion = { slug: string; name: string; href: string; near?: boolean };
+
 export type CheckOk = {
   ok: true;
   /** what confirmed it */
@@ -87,16 +88,16 @@ export function nearest(q: string, dir: DirEntry[], n = 3): Suggestion[] {
   const c = canonicalSlug(q).replace(/-/g, "");
   const scored = dir.map((e) => {
     const keys = [e.slug, e.name, e.composioSlug || ""].map((k) => canonicalSlug(k).replace(/-/g, "")).filter(Boolean);
-    let d = 99;
+    let d = 99; // editDistance(…, 4) returns 5 for "further than 4", which must never count as near
     for (const k of keys) {
       d = Math.min(d, editDistance(c, k, 4));
       if (c.length >= 3 && (k.startsWith(c) || c.startsWith(k))) d = Math.min(d, 1.5);
     }
     return { e, d: d + (e.ready ? -0.25 : 0) };
-  }).filter((x) => x.d <= Math.max(2, Math.ceil(c.length / 3))).sort((a, b) => a.d - b.d);
+  }).filter((x) => x.d <= Math.min(4, Math.max(2, Math.ceil(c.length / 3)))).sort((a, b) => a.d - b.d);
   const popular = ["gmail", "slack", "notion", "hubspot", "github"].map((s) => dir.find((e) => e.slug === s && e.ready)).filter(Boolean) as DirEntry[];
   const pick = (scored.length ? scored.map((x) => x.e) : popular.length ? popular : dir.filter((e) => e.ready)).slice(0, n);
-  return pick.map((e) => ({ slug: e.slug, name: e.name, href: `/guide/${e.slug}` }));
+  return pick.map((e) => ({ slug: e.slug, name: e.name, href: `/guide/${e.slug}`, near: scored.length > 0 }));
 }
 
 /* ───────── 5: network signals ───────── */

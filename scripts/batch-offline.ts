@@ -63,7 +63,7 @@ const drafts: any[] = [
     uncertain: ["Zoom doesn't publish review turnaround. 2–6 weeks is an estimate from developer reports."],
     sources: [
       { title: "Zoom: Create an OAuth (General) app", url: "https://developers.zoom.us/docs/build-flow/create-oauth-apps" },
-      { title: "Zoom: Key concepts (private vs published apps)", url: "https://developers.zoom.us/docs/platform/key-concepts/" },
+      { title: "Zoom: Key concepts (private vs published apps)", url: "https://developers.zoom.us/docs/build-flow/publish/" },
       { title: "Zoom: App review process", url: "https://developers.zoom.us/docs/distribute/app-review-process/" },
       { title: "Zoom Support: Security review process", url: "https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0058021" },
       { title: "Zoom: Security requirements for Marketplace apps", url: "https://developers.zoom.us/docs/distribute/security-requirements/" },

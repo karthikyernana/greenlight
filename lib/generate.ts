@@ -3,7 +3,7 @@
 import { investigate, type PipeEvent, type RunOpts } from "./pipeline/run";
 import { getGraph, GRAPHS } from "./graph/load";
 import { canonicalSlug, sameApp } from "./canonical";
-import { findStored, getStored, isStale, markRunStarted, putStored, recheckWaitMin, storeStatus, type StoredGuide } from "./store";
+import { claimRun, findStored, getStored, isStale, markRunStarted, putStored, recheckWaitMin, releaseRun, storeStatus, type StoredGuide } from "./store";
 import { publishVerdict } from "./publish";
 import type { ProviderGraph } from "./graph/schema";
 import type { Trace } from "./pipeline/trace";
@@ -27,7 +27,9 @@ export type GenEvent =
   | { type: "redirect"; slug: string; name: string; reason: string }
   | { type: "cached"; source: "library" | "store"; storedAt?: string; stale?: boolean; recheckInMin?: number }
   | { type: "notice"; message: string }
+  | { type: "waiting"; message: string }
   | { type: "error"; code: "not_an_app"; message: string; suggestions: Suggestion[]; reason: string }
+  | { type: "error"; code: "rate_limited"; message: string; retryInMin: number }
   | { type: "published"; publish: StoredGuide["publish"]; storedAt: string; store: "blob" | "memory" };
 
 export type GenBody = { q?: string; slug?: string; composioSlug?: string; fresh?: boolean };
@@ -35,13 +37,19 @@ export type GenBody = { q?: string; slug?: string; composioSlug?: string; fresh?
 const hits = new Map<string, number[]>();
 const gi = globalThis as unknown as { __glInflight?: Map<string, Promise<void>> };
 const inflight = (gi.__glInflight ??= new Map());
-export function ipLimited(ip: string, max = 20) {
-  const now = Date.now();
+export const IP_LIMIT = 20;
+/** Sliding hour per IP (per instance). Returns minutes until the next investigation is allowed, or 0 when allowed. */
+export function ipLimited(ip: string, max = IP_LIMIT, now = Date.now()): number {
   const arr = (hits.get(ip) || []).filter((t) => now - t < 3600_000);
+  if (arr.length >= max) { hits.set(ip, arr); return Math.max(1, Math.ceil((arr[0] + 3600_000 - now) / 60_000)); }
   arr.push(now);
   hits.set(ip, arr);
-  return arr.length > max;
+  return 0;
 }
+export function rateLimitMessage(min: number, max = IP_LIMIT) {
+  return `You've started ${max} new investigations in the last hour, which is this demo's limit (each one costs model calls). Guides that already exist still open instantly. A new one can start in ${min} min.`;
+}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function storedEvents(rec: StoredGuide): GenEvent[] {
   return [
@@ -51,7 +59,7 @@ export function storedEvents(rec: StoredGuide): GenEvent[] {
   ];
 }
 
-export async function* generate(body: GenBody, opts: { ip?: string; run?: RunOpts; investigateImpl?: typeof investigate; check?: (q: string) => Promise<CheckResult> } = {}): AsyncGenerator<GenEvent> {
+export async function* generate(body: GenBody, opts: { ip?: string; run?: RunOpts; investigateImpl?: typeof investigate; check?: (q: string) => Promise<CheckResult>; waitMs?: number; pollMs?: number } = {}): AsyncGenerator<GenEvent> {
   const q = String(body.q || "").trim().slice(0, 120);
   if (!q) { yield { type: "error", code: "invalid", message: "Type an app name or website." }; return; }
   const slug = canonicalSlug(body.slug || q);
@@ -89,13 +97,31 @@ export async function* generate(body: GenBody, opts: { ip?: string; run?: RunOpt
 
   // 3. investigate (one run per app per instance: a second request waits for the first and gets the stored result)
   const running = inflight.get(slug);
+  const waitMsg = "Someone else started investigating this app a moment ago. Joining that run instead of starting a second one; the guide appears here when it finishes.";
   if (running) {
-    yield { type: "notice", message: "Someone is already investigating this app. Waiting for that run instead of starting another." };
+    yield { type: "waiting", message: waitMsg };
     await running.catch(() => {});
     const rec = await getStored(slug, { fresh: true });
     if (rec) { for (const e of storedEvents(rec)) yield e; return; }
   }
-  if (opts.ip && ipLimited(opts.ip)) { yield { type: "error", code: "invalid", message: "Limit reached: 20 investigations per hour. Stored guides still load." }; return; }
+  if (opts.ip) {
+    const min = ipLimited(opts.ip);
+    if (min) { yield { type: "error", code: "rate_limited", message: rateLimitMessage(min), retryInMin: min }; return; }
+  }
+  // same app already running on another server instance: wait for its stored result
+  const runId = Math.random().toString(36).slice(2, 10);
+  const lock = await claimRun(slug, runId);
+  if (!lock.ok) {
+    yield { type: "waiting", message: waitMsg };
+    const deadline = Date.now() + (opts.waitMs ?? 260_000);
+    while (Date.now() < deadline) {
+      await sleep(opts.pollMs ?? 4000);
+      const rec = await getStored(slug, { fresh: true });
+      if (rec && Date.parse(rec.storedAt) >= lock.since - 2000) { for (const e of storedEvents(rec)) yield e; return; }
+    }
+    yield { type: "error", code: "invalid", message: "The other investigation of this app didn't finish. Retry to start a new one." };
+    return;
+  }
   let graph: ProviderGraph | null = null;
   let trace: Trace | undefined;
   let release!: () => void;
@@ -125,5 +151,6 @@ export async function* generate(body: GenBody, opts: { ip?: string; run?: RunOpt
   } finally {
     inflight.delete(slug);
     release();
+    await releaseRun(slug, runId);
   }
 }

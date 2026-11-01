@@ -65,6 +65,18 @@ function evidenceOf(ids: string[], facts: Map<string, Fact>): FactStatus | undef
   return "uncertain";
 }
 
+const NA = /^\s*(n\/?a|none|nothing|-+|—)?\s*\.?\s*$/i;
+/** Who owns a model-written step, from what it says each side does. Models often label a step "you" while listing real
+    agent work (writing the OAuth code, drafting the submission), which hid the agent's share. Generated graphs only;
+    hand-researched owners are kept as written. */
+export function normaliseOwner(s: Pick<GStep, "owner" | "agent" | "human">): GStep["owner"] {
+  const agent = !NA.test(s.agent || ""), human = !NA.test(s.human || "");
+  if (s.owner === "you" && agent) return "both";
+  if (s.owner === "both" && !human && agent) return "agent";
+  if (s.owner === "both" && !agent && human) return "you";
+  return s.owner;
+}
+
 function toStep(s: GStep, facts: Map<string, Fact>, gate?: string): PlanStep {
   return {
     id: s.id, title: s.title, detail: s.detail, owner: s.owner, agent: s.agent, human: s.human, activeMinutes: s.effortMin, waitDays: [...s.wait] as [number, number],
@@ -234,6 +246,19 @@ export function relevantToggles(g: ProviderGraph, need: Need, days?: [number, nu
 }
 
 /** Facts referenced anywhere in a plan, for the evidence panel. */
+/** One row per distinct claim: model runs often cite the same sentence from the same page several times (one per
+    specialist). Keeps the strongest status (tested > sourced > uncertain) and the first wording. */
+export function dedupeFacts(fs: Fact[]): Fact[] {
+  const rank = { tested: 0, sourced: 1, uncertain: 2 } as const;
+  const key = (f: Fact) => `${f.claim.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}|${(f.url || "").replace(/[#?].*$/, "").replace(/\/$/, "")}`;
+  const out = new Map<string, Fact>();
+  for (const f of fs) {
+    const k = key(f), prev = out.get(k);
+    if (!prev || rank[f.status] < rank[prev.status]) out.set(k, prev && !f.quote ? { ...f, quote: prev.quote } : f);
+  }
+  return [...out.values()];
+}
+
 export function planFacts(g: ProviderGraph, p: Plan): Fact[] {
   const ids = new Set<string>([
     ...p.steps.flatMap((s) => s.facts), ...p.gatesHit.flatMap((x) => x.because.facts), ...p.gatesSkipped.flatMap((x) => x.facts),

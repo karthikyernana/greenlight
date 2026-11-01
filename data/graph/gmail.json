@@ -726,7 +726,7 @@
   {
    "claim": "Sensitive-scope verification takes about 10 business days",
    "status": "unverifiable",
-   "note": "The Verification FAQ that stated this now renders its answers client-side, and the sensitive-scope page gives no number. Kept as Google's earlier estimate; treat as approximate.",
+   "note": "The quote (\"10 Business days\" in the FAQ's verification table) was captured from the JS-rendered page on 2026-11-01; a plain fetch of the FAQ shows only the questions, so it can't be re-checked without a rendering fetch, and the sensitive-scope page itself gives no number. Treat as Google's approximate estimate.",
    "url": "https://support.google.com/cloud/answer/13463817",
    "at": "2026-11-01"
   }

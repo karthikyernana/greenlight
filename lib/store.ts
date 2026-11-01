@@ -7,7 +7,8 @@
    (STALE_DAYS) or someone presses Re-check, and Re-check is rate-limited per app (RECHECK_COOLDOWN_MIN). */
 import { ProviderGraph } from "./graph/schema";
 import type { Trace } from "./pipeline/trace";
-import { publishVerdict, type PublishVerdict } from "./publish";
+import { normaliseOwner } from "./engine";
+import { publishVerdict, withSourceCheck, type PublishVerdict } from "./publish";
 import { canonicalSlug, sameApp } from "./canonical";
 
 export const STALE_DAYS = 30;
@@ -126,13 +127,21 @@ function cacheReset() { rc.clear(); g.__glListCache = undefined; }
 const guidePath = (slug: string) => `guides/${slug}.json`;
 const tracePath = (id: string) => `traces/${id}.json`;
 
+/** Stored guides withdrawn from the store, with why. They stop resolving (board, command bar, /guide/<slug>, API)
+    without touching the blob, so this is reversible. A withdrawn name that is typed again goes through the input gate. */
+export const RETIRED: Record<string, string> = {
+  capiclan: "Not a product: investigated before the input gate existed (2026-11-01), and the agent built a Google guide for it.",
+};
+
 function parseRecord(raw: string | null): StoredGuide | null {
   if (!raw) return null;
   try {
     const j = JSON.parse(raw);
     const gr = ProviderGraph.safeParse(j.graph);
     if (!gr.success) return null;
-    return { ...j, graph: gr.data };
+    if (RETIRED[canonicalSlug(j.slug || gr.data.slug)]) return null;
+    const graph = { ...gr.data, steps: gr.data.steps.map((st) => ({ ...st, owner: normaliseOwner(st) })) };
+    return { ...j, graph, publish: j.publish ? withSourceCheck(j.publish, graph) : j.publish };
   } catch { return null; }
 }
 
@@ -187,6 +196,30 @@ export function recheckWaitMin(r: Pick<StoredGuide, "storedAt" | "lastRunAt">, n
 }
 
 /** Record that an investigation started (so two people pressing Re-check don't both spend model calls). */
+/* Cross-instance run lock: a small blob per app, so two developers asking for the same new app on different server
+   instances share one investigation. Best effort (read-then-write, no compare-and-swap); a lock older than
+   RUN_LOCK_MS is ignored, so a crashed run can't block an app. */
+export const RUN_LOCK_MS = 300_000;
+const lockPath = (slug: string) => `locks/${canonicalSlug(slug)}.json`;
+export async function claimRun(slug: string, id: string, now = Date.now()): Promise<{ ok: true } | { ok: false; since: number }> {
+  try {
+    const raw = await backend().get(lockPath(slug));
+    if (raw) {
+      const j = JSON.parse(raw) as { id?: string; at?: number };
+      if (j.id !== id && j.at && now - j.at < RUN_LOCK_MS) return { ok: false, since: j.at };
+    }
+    await backend().put(lockPath(slug), JSON.stringify({ id, at: now }));
+  } catch { /* store unreachable: fall back to the per-instance guard */ }
+  return { ok: true };
+}
+export async function releaseRun(slug: string, id: string) {
+  try {
+    const raw = await backend().get(lockPath(slug));
+    if (raw && (JSON.parse(raw) as { id?: string }).id !== id) return;
+    await backend().put(lockPath(slug), JSON.stringify({ id, at: 0 }));
+  } catch { /* ignore */ }
+}
+
 export async function markRunStarted(slug: string) {
   const r = await getStored(slug, { fresh: true });
   if (!r) return;

@@ -1,4 +1,5 @@
 "use client";
+import { suggestLead } from "@/lib/checkClient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { IndexEntry } from "@/lib/types";
@@ -91,7 +92,7 @@ export default function HeaderBar({ index, intents, jev = false }: { index: Inde
       {open && rejected && (
         <div role="alert" data-rejected="" className="glass absolute left-0 right-0 top-11 z-40 rounded-[12px] px-3 py-2.5 text-[13.5px] sm:right-auto sm:w-[min(460px,90vw)]">
           <p>{rejected.message}</p>
-          {rejected.suggestions.length > 0 && <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-3">Did you mean {rejected.suggestions.map((s) => <button key={s.slug} onMouseDown={(e) => { e.preventDefault(); go(s.href); }} className="badge hover:text-ink">{s.name}</button>)}</p>}
+          {rejected.suggestions.length > 0 && <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-3">{suggestLead(rejected.suggestions)} {rejected.suggestions.map((s) => <button key={s.slug} onMouseDown={(e) => { e.preventDefault(); go(s.href); }} className="badge hover:text-ink">{s.name}</button>)}</p>}
         </div>
       )}
       {show && !rejected && (

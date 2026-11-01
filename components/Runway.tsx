@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import type { Step } from "@/lib/types";
 
 import { runway, RULER_TICKS, type Lane } from "@/lib/plan";
@@ -11,9 +12,10 @@ const LANES: { id: Lane; label: string; sub: string }[] = [
 
 const ROW_H = 22;
 
-function liveDate(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + Math.ceil(days * 1.4)); // provider estimates are business days
+/** Worst-case live date. Same calendar-day count as the headline wait ("5w–2mo"), so the two always agree. */
+export function liveDate(days: number, now = new Date()) {
+  const d = new Date(now);
+  d.setDate(d.getDate() + Math.ceil(days));
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
@@ -30,7 +32,10 @@ export default function Runway({ steps, onPick }: { steps: Step[]; onPick?: (id:
     if (1 - x < 0.06 && t.d !== 0) continue; // don't crowd the LIVE line
     ticks.push({ x, label: t.label });
   }
-  const liveLabel = sameDay ? "LIVE TODAY" : `LIVE ≈ ${liveDate(maxDays).toUpperCase()}`;
+  // the date depends on the viewer's clock: computed after mount so static HTML and hydration always match
+  const [date, setDate] = useState<string | null>(null);
+  useEffect(() => { setDate(liveDate(maxDays)); }, [maxDays]);
+  const liveLabel = sameDay ? "LIVE TODAY" : date ? `LIVE BY ≈ ${date.toUpperCase()}` : "LIVE";
 
   return (
     <div className="select-none" aria-label="Runway from today to live">
