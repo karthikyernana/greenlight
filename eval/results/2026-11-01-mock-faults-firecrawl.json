@@ -1,0 +1,304 @@
+{
+ "summary": {
+  "mode": "mock-faults",
+  "date": "2026-11-01",
+  "base": "in-process",
+  "apps": 10,
+  "completed": 8,
+  "scopeTierAccuracy": 0.03333333333333333,
+  "capabilityCoverage": 0.03333333333333333,
+  "gateRecall": 0.25,
+  "gateRecallLoose": 0.25,
+  "waitRangeOverlap": 0.4,
+  "citationValidity": 0.44791666666666663,
+  "downgraded": 8,
+  "corrected": 0,
+  "faultsCaught": "8/8",
+  "medianLatencyMs": 2963,
+  "totalTokens": 53275
+ },
+ "rows": [
+  {
+   "slug": "github",
+   "name": "GitHub",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 0.5,
+   "factsChecked": 2,
+   "downgraded": 1,
+   "corrected": 0,
+   "corrections": 1,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 5,
+    "firecrawl": 5
+   },
+   "jevDecisions": 0,
+   "latencyMs": 6867,
+   "tokens": 8720,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxurr5rglmht"
+  },
+  {
+   "slug": "notion",
+   "name": "Notion",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 1,
+   "gateRecallLoose": 1,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 0.6666666666666666,
+   "factsChecked": 3,
+   "downgraded": 1,
+   "corrected": 0,
+   "corrections": 1,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 3,
+    "firecrawl": 5
+   },
+   "jevDecisions": 0,
+   "latencyMs": 2963,
+   "tokens": 8289,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxurwhc76q8j"
+  },
+  {
+   "slug": "slack",
+   "name": "Slack",
+   "ok": true,
+   "tierAcc": 0.3333333333333333,
+   "capCoverage": 0.3333333333333333,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 0.5,
+   "factsChecked": 2,
+   "downgraded": 1,
+   "corrected": 0,
+   "corrections": 1,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 5
+   },
+   "jevDecisions": 0,
+   "latencyMs": 1969,
+   "tokens": 6729,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxurysgod7uf"
+  },
+  {
+   "slug": "hubspot",
+   "name": "HubSpot",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 1,
+   "gateRecallLoose": 1,
+   "waitOverlap": 0,
+   "goldWait": "2w–7w",
+   "predWait": "Same day",
+   "citationValidity": 0.6666666666666666,
+   "factsChecked": 3,
+   "downgraded": 1,
+   "corrected": 0,
+   "corrections": 1,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 8
+   },
+   "jevDecisions": 0,
+   "latencyMs": 3910,
+   "tokens": 9082,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxus0bf6c6ja"
+  },
+  {
+   "slug": "outlook",
+   "name": "Microsoft Outlook",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 0.5,
+   "gateRecallLoose": 0.5,
+   "waitOverlap": 0,
+   "goldWait": "1d–10d",
+   "predWait": "Same day",
+   "citationValidity": 0.75,
+   "factsChecked": 4,
+   "downgraded": 1,
+   "corrected": 0,
+   "corrections": 1,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 10
+   },
+   "jevDecisions": 0,
+   "latencyMs": 9682,
+   "tokens": 9202,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxus3c9lpdt6"
+  },
+  {
+   "slug": "gmail",
+   "name": "Gmail",
+   "ok": false,
+   "error": "Couldn't read any of this app's developer docs, so there is nothing to classify. The live checks above still ran.",
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 0,
+   "goldWait": "",
+   "predWait": "",
+   "citationValidity": null,
+   "factsChecked": 0,
+   "downgraded": 0,
+   "corrected": 0,
+   "corrections": 0,
+   "faultCaught": false,
+   "retrievers": {
+    "fetch": 2
+   },
+   "jevDecisions": 0,
+   "latencyMs": 1758,
+   "tokens": 151,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxusatgdhaky"
+  },
+  {
+   "slug": "salesforce",
+   "name": "Salesforce",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 0,
+   "factsChecked": 1,
+   "downgraded": 1,
+   "corrected": 0,
+   "corrections": 1,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 5
+   },
+   "jevDecisions": 0,
+   "latencyMs": 4557,
+   "tokens": 4122,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxusc6k58wqw"
+  },
+  {
+   "slug": "instagram",
+   "name": "Instagram",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 0,
+   "goldWait": "7d–5w",
+   "predWait": "Same day",
+   "citationValidity": 0,
+   "factsChecked": 1,
+   "downgraded": 1,
+   "corrected": 0,
+   "corrections": 1,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 5
+   },
+   "jevDecisions": 0,
+   "latencyMs": 2896,
+   "tokens": 2280,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxusfpcvkpgv"
+  },
+  {
+   "slug": "linkedin",
+   "name": "LinkedIn",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 0,
+   "goldWait": "≤2d",
+   "predWait": "Same day",
+   "citationValidity": 0.5,
+   "factsChecked": 2,
+   "downgraded": 1,
+   "corrected": 0,
+   "corrections": 1,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 6
+   },
+   "jevDecisions": 0,
+   "latencyMs": 2127,
+   "tokens": 4544,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxushxw8zaqr"
+  },
+  {
+   "slug": "twitter",
+   "name": "X (Twitter) API",
+   "ok": false,
+   "error": "Couldn't read any of this app's developer docs, so there is nothing to classify. The live checks above still ran.",
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 0,
+   "goldWait": "",
+   "predWait": "",
+   "citationValidity": null,
+   "factsChecked": 0,
+   "downgraded": 0,
+   "corrected": 0,
+   "corrections": 0,
+   "faultCaught": false,
+   "retrievers": {},
+   "jevDecisions": 0,
+   "latencyMs": 688,
+   "tokens": 156,
+   "models": [
+    "mock:heuristic-v1"
+   ],
+   "traceId": "mvxusjlcbohuy"
+  }
+ ]
+}

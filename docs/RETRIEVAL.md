@@ -8,7 +8,7 @@ The model never searches. We fetch, and the model reads only what we fetched (`l
 |---|---|---|---|
 | 1 | **Firecrawl** `POST https://api.firecrawl.dev/v2/scrape` (markdown, `onlyMainContent`, `maxAge` 2 days) | `FIRECRAWL_API_KEY` set, page was *picked* by the Scout | JS-rendered (Meta, Salesforce help). Credits kept low: at most `FIRECRAWL_MAX_PAGES` (default 6) scrapes per run, URL cache per run, Firecrawl's own cache allowed, stops after 3 errors. |
 | 1b | Firecrawl `POST /v2/search` | same key | Replaces Bing/DDG HTML search for the Scout and re-check queries (no scraping in search, to save credits). |
-| 2 | **Jina Reader** `GET https://r.jina.ai/<url>` | picked pages without Firecrawl (or after it failed); guessed hosts only when plain fetch looks JS-rendered or blocked | Free; `JINA_API_KEY` optional. Runs in parallel with plain fetch so it adds no wall time. A 401/403/429 trips a per-run breaker. Measured 2026-11-01: anonymous Jina answers **401 "bad IP reputation"** from the Hark sandbox, so locally it falls through to fetch; whether Vercel's IPs are allowed shows in each trace. `RETRIEVAL_JINA=0` disables it. |
+| 2 | **Jina Reader** `GET https://r.jina.ai/<url>` | picked pages without Firecrawl (or after it failed); guessed hosts only when plain fetch looks JS-rendered or blocked | Free; `JINA_API_KEY` optional. Runs in parallel with plain fetch, so it adds at most its timeout, once per run. A 401/403/429 trips a per-run breaker. Measured 2026-11-01: anonymous Jina answers **401 "bad IP reputation"** from the Hark sandbox and timed out from Vercel; a timeout also trips the breaker. `RETRIEVAL_JINA=0` disables it. |
 | 3 | **Plain fetch** + HTML→text | always last; first for conventional-host guesses | Unchanged from v3. |
 
 Markdown from Firecrawl/Jina is flattened (`mdToText`: link targets, images and emphasis markers removed) before passages are cut, so the quotes the model copies match the stored text.
@@ -28,5 +28,6 @@ Markdown from Firecrawl/Jina is flattened (`mdToText`: link targets, images and 
 ## Known limits (2026-11-01)
 - From datacenter IPs, Bing returns navigational results and DuckDuckGo answers 202 challenges. Without Firecrawl, search is best effort; the model pointer and conventional hosts carry most investigations.
 - Without Firecrawl (and with Jina blocked), JS-rendered docs (developers.facebook.com answers 400 to non-browsers; Salesforce help is client-rendered) yield no text; those facts stay Uncertain.
-- Firecrawl was not exercised live: no key was available to Hark on 2026-11-01. The path is covered by mocked tests (`tests/retrieval.test.ts`).
+- Firecrawl was exercised locally with Karthik's key (sandbox only, never deployed): developers.facebook.com/docs/permissions came back as 85k characters of markdown in 1.1 s, where plain fetch gets a 400. Mock-model harness: quote-match 17% → 45–47%, gate recall 10% → 25–32% (docs/HARNESS.md). The plan's per-minute rate limit returns 429 under fast back-to-back runs; a 429 stops Firecrawl for the rest of that run.
+- Jina from Vercel: anonymous calls ran past the timeout on 2026-11-01 (QuickBooks run), so a timeout now trips the breaker (8 s, once per run).
 - Probes are public and unauthenticated only: nothing is created, signed into or submitted.

@@ -165,7 +165,7 @@ export function makeRetriever(opts: { fetchImpl?: F; firecrawlMax?: number } = {
     if (kind === "pick" && firecrawlConfigured() && state.firecrawlUsed < state.firecrawlMax && state.firecrawlErrors < 3) {
       state.firecrawlUsed++;
       try { const p = await firecrawlScrape(url, f); tried.push(`firecrawl ${p.text.length}c`); if (usable(p)) return { ...p, tried }; }
-      catch (e: any) { state.firecrawlErrors++; tried.push(String(e?.message || e)); }
+      catch (e: any) { const m = String(e?.message || e); state.firecrawlErrors += / 429/.test(m) ? 3 : 1; tried.push(m.slice(0, 60)); } // 429 = plan rate limit: stop for this run
     }
     if (kind === "pick") {
       // Jina and plain fetch race in parallel so the fallback costs no extra wall time; Jina's markdown wins when usable.
