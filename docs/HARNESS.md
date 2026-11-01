@@ -91,6 +91,17 @@ What each feature contributed, as far as it can be separated:
 
 Caveats: 10 apps is a small sample; tier accuracy stays low because the model labels capabilities differently from the golden graphs (the scorer matches by scope string or label overlap). X still scores 0 (its docs are JS-rendered and its gates are pricing, not review). Groq's free tier rate-limits tokens per minute, so runs use `--concurrency 1`.
 
+### Production: cold vs cached (Xero, https://oauth-greenlight-v2.vercel.app, 2026-11-01)
+
+| Request | Latency | Model calls | Served from |
+|---|---|---|---|
+| Cold: first `POST /api/generate {"q":"Xero"}` (trace `mvxxse3mwkx62`, started ~20:09 IST) | **280.6 s** | full pipeline (5 lanes) | live investigation → stored as Draft in Vercel Blob |
+| Cached, before redeploy (1st / 2nd request, 20:36 IST) | **1.19 s / 0.29 s** | 0 | Blob store (`cached` event, `source: "store"`; only `cached → graph → published`, no `stage` events) |
+| Cached, after redeploy of 6820f73 (1st / 2nd request, 20:38 IST) | **0.82 s / 0.42 s** | 0 | Blob store, same `storedAt` (8:14 PM IST): the guide survived the deploy |
+| `GET /guide/xero` after redeploy | 0.59 s | 0 | Blob store |
+
+Production cold → cached: 280.6 s → 0.29–1.19 s (−99.6% or better). The first request on a fresh instance pays a cold start plus one Blob read (~0.8–1.2 s); warm requests are 0.3–0.4 s. Measured with `curl -w time_total` from the Hark sandbox (India), so network RTT to Vercel is included.
+
 ## Re-run
 
 ```bash
