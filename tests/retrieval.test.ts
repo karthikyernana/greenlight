@@ -99,3 +99,20 @@ test("pipeline: the verifier checks quotes against the Firecrawl text and the tr
     assert.ok(g.facts.some((x: any) => x.quote.includes("requires app review before public users can grant it")));
   });
 });
+
+test("jina timeout trips the breaker too, so the cost is paid once per run", async () => {
+  await withEnv({ FIRECRAWL_API_KEY: undefined, JINA_TIMEOUT_MS: "50" }, async () => {
+    let jina = 0;
+    const f = (async (input: any, init: any) => {
+      const url = String(input?.url || input);
+      if (url.startsWith("https://r.jina.ai/")) { jina++; return await new Promise((_, rej) => init.signal.addEventListener("abort", () => rej(Object.assign(new Error("aborted"), { name: "AbortError" })))); }
+      return new Response(HTML, { status: 200, headers: { "content-type": "text/html" } });
+    }) as typeof fetch;
+    const r = makeRetriever({ fetchImpl: f });
+    const a = await r.get("https://developers.acme.com/a");
+    const b = await r.get("https://developers.acme.com/b");
+    assert.equal(a.via, "fetch"); assert.equal(b.via, "fetch");
+    assert.equal(jina, 1);
+    assert.equal(r.state.jinaNote, "jina timeout");
+  });
+});

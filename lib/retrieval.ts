@@ -63,7 +63,7 @@ export async function webSearch(q: string, n = 6): Promise<{ hits: Hit[]; engine
 export async function fetchPage(url: string, ms = 9000, f?: typeof fetch): Promise<Page> {
   const t0 = Date.now();
   const r = await fetchText(url, ms, { headers: { "user-agent": BROWSER_UA } }, f || fetch);
-  if (!r) return { url, title: "", text: "", status: 0, ms: Date.now() - t0 };
+  if (!r) return { url, title: "", text: "", status: 0, ms: Date.now() - t0, via: "fetch" };
   const title = decodeEntities(r.text.match(/<title[^>]*>([^<]{1,160})<\/title>/i)?.[1] || "").trim();
   const isJson = /json/.test(r.ctype);
   return { url: r.finalUrl || url, title: title || url, text: isJson ? r.text.slice(0, 60_000) : htmlToText(r.text).slice(0, 120_000), status: r.status, ms: Date.now() - t0, via: "fetch" };
@@ -131,7 +131,7 @@ export async function jinaRead(url: string, f: F = fetch): Promise<Page> {
   const t0 = Date.now();
   const headers: Record<string, string> = { "x-return-format": "markdown", accept: "text/plain" };
   if (env("JINA_API_KEY")) headers.authorization = `Bearer ${env("JINA_API_KEY")}`;
-  const r = await timed(f, `https://r.jina.ai/${url}`, { headers }, 12_000);
+  const r = await timed(f, `https://r.jina.ai/${url}`, { headers }, Number(env("JINA_TIMEOUT_MS")) || 8_000);
   const body = await r.text();
   if (!r.ok) { const e: any = new Error(`jina ${r.status}`); e.status = r.status; throw e; }
   const title = body.match(/^Title:\s*(.+)$/m)?.[1]?.trim() || url;
@@ -151,7 +151,14 @@ export function makeRetriever(opts: { fetchImpl?: F; firecrawlMax?: number } = {
   const viaJina = async (url: string, tried: string[]) => {
     if (state.jinaOff) return null;
     try { const p = await jinaRead(url, f); tried.push(`jina ${p.text.length}c`); return p; }
-    catch (e: any) { tried.push(String(e?.message || e)); if (e?.status === 401 || e?.status === 429 || e?.status === 403) { state.jinaOff = true; state.jinaNote = String(e.message); } return null; }
+    catch (e: any) {
+      const msg = e?.name === "AbortError" || /abort/i.test(String(e?.message)) ? "jina timeout" : String(e?.message || e);
+      tried.push(msg);
+      // 401/403/429 or a timeout trips the breaker for the rest of the run (measured 2026-11-01: from Vercel, anonymous
+      // Jina often runs past the timeout; from the sandbox it answers 401), so the cost is paid at most once per run.
+      if (e?.status === 401 || e?.status === 429 || e?.status === 403 || msg === "jina timeout") { state.jinaOff = true; state.jinaNote = msg; }
+      return null;
+    }
   };
   const load = async (url: string, kind: "pick" | "guess"): Promise<Page> => {
     const tried: string[] = [];

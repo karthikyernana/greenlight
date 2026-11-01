@@ -4,7 +4,7 @@
      npm run eval -- --mock                heuristic mock model, live web (no key needed)
      npm run eval -- --mock --faults       mock + one fabricated quote per app (the verifier must catch them)
      EVAL_BASE_URL=https://… npm run eval  against a deployed instance's /api/generate
-   Options: --apps gmail,slack   --budget 60000   --concurrency 3
+   Options: --apps gmail,slack   --budget 60000   --concurrency 3   --tag firecrawl (suffix for the result file)
    Writes eval/results/<date>-<mode>.json and .md, and every trace to public/traces/<id>.json (viewable at /trace/<id>). */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { investigate, type PipeEvent } from "../lib/pipeline/run";
@@ -116,7 +116,7 @@ async function main() {
     medianLatencyMs: rows.map((r) => r.latencyMs).sort((a, b) => a - b)[Math.floor(rows.length / 2)], totalTokens: rows.reduce((a, r) => a + r.tokens, 0),
   };
   const out = { summary, rows };
-  const file = `eval/results/${date}-${MODE}`;
+  const file = `eval/results/${date}-${MODE}${opt("tag") ? `-${opt("tag")}` : ""}`;
   writeFileSync(`${file}.json`, JSON.stringify(out, null, 1));
   const pct = (x: number | null) => (x === null ? "–" : `${Math.round(x * 100)}%`);
   const md = [
