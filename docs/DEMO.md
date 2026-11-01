@@ -12,7 +12,7 @@ Point at the board: 100 apps, the ready ones sorted by wait, badges Curated / Ve
 > "Five weeks to two months, because gmail.readonly is restricted, which means a paid CASA security assessment."
 Hover one of the three evidence dots after the verdict: the verbatim quote from Google's page appears. Point at the four numbers (wait, hands-on, steps, "Agent can prepare 6 of 8"), then the runway: Agent / You / Provider lanes, orange = critical path, "LIVE BY ≈" date.
 
-**1:20 · Change the need (30 s).** Tick **Read email** off and **Send email only** on: the wait drops to 12 days–3 weeks (sensitive scope: brand + scope verification, no CASA). Click **Who connects → My team**: live today (internal Workspace apps skip verification). Click **Public** again.
+**1:20 · Change the need (30 s).** Click **Read email** and **Draft replies** off and **Send email only** on: the wait drops to 12 days–3 weeks (sensitive scope: brand + scope verification, no CASA). Click **Who connects → My team**: live today (internal Workspace apps skip verification). Click **Public** again.
 
 **1:50 · What to do next (20 s).** Open **Faster paths**: "Composio's approved app: users connect today", and the Gmail add-on path with its trade-off. Open **Steps**, expand step 06: the Agent / You split. Click **Setup kit**: redirect URIs, scope justification, demo-video shot list, coding-agent handoff. Close it.
 
