@@ -209,3 +209,14 @@ test("fallback order: Gemini 404 on the first model walks to the next, then Groq
     delete process.env.GEMINI_API_KEY; delete process.env.GROQ_API_KEY;
   }
 });
+
+test("Blob via OIDC: BLOB_STORE_ID alone (no RW token) selects the Blob backend", () => {
+  _setBackend(null);
+  delete process.env.BLOB_READ_WRITE_TOKEN;
+  process.env.BLOB_STORE_ID = "store_test123";
+  try {
+    const s = storeStatus();
+    assert.equal(s.mode, "blob");
+    assert.equal((s as any).auth, "oidc");
+  } finally { delete process.env.BLOB_STORE_ID; }
+});

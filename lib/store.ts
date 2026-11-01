@@ -1,5 +1,7 @@
 /* Shared guide store: generate once, reuse for everyone.
-   - Vercel Blob when BLOB_READ_WRITE_TOKEN is set (guides/<slug>.json, traces/<id>.json);
+   - Vercel Blob when the project has a Blob store connected (guides/<slug>.json, traces/<id>.json). Auth is either
+     BLOB_READ_WRITE_TOKEN, or Vercel OIDC with BLOB_STORE_ID (what "Connect store" sets up on newer projects; the SDK
+     reads the function's OIDC token itself);
    - otherwise this server instance's memory (what v3 did), and /api/status says so.
    A stored guide is served with zero model calls. It is re-investigated only when it is older than 30 days
    (STALE_DAYS) or someone presses Re-check, and Re-check is rate-limited per app (RECHECK_COOLDOWN_MIN). */
@@ -45,7 +47,7 @@ function memoryBackend(): Backend {
   };
 }
 
-function blobBackend(token: string): Backend {
+function blobBackend(token: string | undefined): Backend {
   // Blob stores are public or private; the store's own setting wins. Try BLOB_ACCESS (default public) and flip once.
   let access: "public" | "private" = process.env.BLOB_ACCESS === "private" ? "private" : "public";
   const flipOn = (e: unknown) => /access|private|public/i.test(String((e as Error)?.message || e));
@@ -97,14 +99,22 @@ export function _setBackend(b: Backend | null) { override = b; cacheReset(); }
 export function backend(): Backend {
   if (override) return override;
   const token = (process.env.BLOB_READ_WRITE_TOKEN || "").trim();
-  return token ? blobBackend(token) : memoryBackend();
+  if (token) return blobBackend(token);
+  if ((process.env.BLOB_STORE_ID || "").trim()) return blobBackend(undefined); // OIDC
+  return memoryBackend();
 }
 
 export function storeStatus() {
   const b = backend();
   return b.kind === "blob"
-    ? { mode: "blob" as const, shared: true, note: "Vercel Blob: generated guides are shared by every visitor and every server instance." }
-    : { mode: "memory" as const, shared: false, note: "BLOB_READ_WRITE_TOKEN not set: generated guides are kept in this server instance's memory only (lost on cold start, not shared across instances). Create a Blob store on the Vercel project to share them." };
+    ? { mode: "blob" as const, shared: true, auth: (process.env.BLOB_READ_WRITE_TOKEN || "").trim() ? "token" : "oidc", note: "Vercel Blob: generated guides are shared by every visitor and every server instance." }
+    : { mode: "memory" as const, shared: false, note: "No Blob store connected (neither BLOB_READ_WRITE_TOKEN nor BLOB_STORE_ID is set): generated guides are kept in this server instance's memory only (lost on cold start, not shared across instances). Create a Blob store on the Vercel project to share them." };
+}
+
+/** Can we actually reach the store? (a real list call; errors are reported as text, never credentials) */
+export async function storeHealth(): Promise<{ reachable: boolean; error?: string }> {
+  try { await backend().list("guides/"); return { reachable: true }; }
+  catch (e) { return { reachable: false, error: String((e as Error)?.message || e).replace(/vercel_blob_rw_[A-Za-z0-9_]+/g, "[token]").slice(0, 160) }; }
 }
 
 /* Per-instance read cache, so a busy guide is one Blob read per minute per instance. */
