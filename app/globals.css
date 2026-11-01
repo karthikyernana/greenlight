@@ -1,54 +1,69 @@
 @import "tailwindcss";
 
+/* Greenlight v2 — ops console / departure board.
+   Paper + ink, thin rules instead of cards, ONE signal colour (international orange) used only for state. */
 @theme {
-  --color-paper: #f5f3ee;
-  --color-card: #fffefb;
-  --color-ink: #16150f;
-  --color-ink-2: #4a4840;
-  --color-ink-3: #8a877c;
-  --color-line: #e4e0d6;
-  --color-line-2: #d6d1c4;
-  --color-go: #1d7a4c;
-  --color-go-bg: #e3f1e8;
-  --color-wait: #a46a00;
-  --color-wait-bg: #fbf0d9;
-  --color-hard: #b8501c;
-  --color-hard-bg: #fbe6da;
-  --color-stop: #a8322d;
-  --color-stop-bg: #f8e0de;
-  --color-info: #3a5b8c;
-  --color-info-bg: #e3eaf5;
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --font-display: var(--font-instrument), Georgia, serif;
+  --color-paper: #f5f5f2;
+  --color-surface: #ffffff;
+  --color-ink: #0f0f0d;
+  --color-ink-2: #43433d;
+  --color-ink-3: #66665f;
+  --color-rule: #dcdcd5;
+  --color-rule-2: #c3c3bb;
+  --color-shade: #ebebe6;
+  --color-signal: #ff4f00;
+  --color-signal-ink: #c03a00;
+  --color-signal-wash: #fff0e8;
+  --color-amber: #9a6700;
+  --color-amber-fill: #f0b429;
+  --color-red: #b3261e;
+  --font-sans: var(--font-host), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jet), ui-monospace, SFMono-Regular, monospace;
 }
 
 html { background: var(--color-paper); color: var(--color-ink); }
-body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
-::selection { background: #cfe8d9; }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; font-size: 15px; line-height: 1.45; }
+::selection { background: var(--color-signal); color: #000; }
+:focus-visible { outline: 2px solid var(--color-signal); outline-offset: 2px; }
+input:focus-visible { outline: none; }
 
-.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; }
-.card { background: var(--color-card); border: 1px solid var(--color-line); border-radius: 14px; }
-.hairline { border-color: var(--color-line); }
-.kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--color-line-2); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; color: var(--color-ink-3); }
+@layer components {
+.mono { font-family: var(--font-mono); font-feature-settings: "zero" 1; }
+.num { font-variant-numeric: tabular-nums; }
+.label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-ink-3); }
+.rule { border-color: var(--color-rule); }
+.kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--color-rule-2); border-radius: 3px; padding: 0 5px; color: var(--color-ink-3); background: var(--color-surface); }
 
-.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 500; white-space: nowrap; }
-.tone-go { background: var(--color-go-bg); color: var(--color-go); }
-.tone-wait { background: var(--color-wait-bg); color: var(--color-wait); }
-.tone-hard { background: var(--color-hard-bg); color: var(--color-hard); }
-.tone-stop { background: var(--color-stop-bg); color: var(--color-stop); }
-.tone-info { background: var(--color-info-bg); color: var(--color-info); }
-.tone-mute { background: #ece9e1; color: var(--color-ink-2); }
-.dot { width: 7px; height: 7px; border-radius: 99px; display: inline-block; background: currentColor; }
+/* evidence glyphs: shape carries meaning, not colour */
+.ev { display: inline-block; width: 9px; height: 9px; border-radius: 99px; flex: none; }
+.ev-tested { background: var(--color-ink); }
+.ev-sourced { background: linear-gradient(90deg, var(--color-ink) 50%, transparent 50%); box-shadow: inset 0 0 0 1.5px var(--color-ink); }
+.ev-uncertain { box-shadow: inset 0 0 0 1.5px var(--color-amber); background: repeating-linear-gradient(135deg, transparent 0 2px, rgba(154,103,0,.45) 2px 3px); }
 
-.md strong { font-weight: 600; color: var(--color-ink); }
-.md code { font-family: var(--font-mono); font-size: 0.86em; background: #efece4; padding: 1px 5px; border-radius: 4px; word-break: break-all; }
+/* runway */
+.wait-hatch { background-image: repeating-linear-gradient(135deg, rgba(240,180,41,.95) 0 4px, rgba(240,180,41,.35) 4px 8px); }
+.wait-solid { background: var(--color-amber-fill); }
+.crit { box-shadow: inset 0 0 0 2px var(--color-signal); }
 
-@keyframes pulse-soft { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
-.pulse-soft { animation: pulse-soft 1.4s ease-in-out infinite; }
-@keyframes rise { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
-.rise { animation: rise .35s ease-out both; }
+.skel { background: linear-gradient(90deg, var(--color-shade) 0%, #f3f3ef 50%, var(--color-shade) 100%); background-size: 200% 100%; animation: skel 1.2s linear infinite; border-radius: 2px; }
+@keyframes skel { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+@keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
+.blink { animation: blink 1s steps(2, start) infinite; }
+@keyframes fill { from { opacity: 0; transform: translateY(3px) } to { opacity: 1; transform: none } }
+.fill-in { animation: fill .3s ease-out both; }
+@keyframes flap { 0% { transform: rotateX(90deg); opacity: .2 } 100% { transform: none; opacity: 1 } }
+.flap { animation: flap .28s ease-out both; transform-origin: top; display: inline-block; }
 
-.stripes { background-image: repeating-linear-gradient(135deg, rgba(164,106,0,.28) 0 6px, rgba(164,106,0,.12) 6px 12px); }
 details > summary { list-style: none; cursor: pointer; }
 details > summary::-webkit-details-marker { display: none; }
+details[open] > summary .chev { transform: rotate(90deg); }
+.chev { transition: transform .15s; display: inline-block; }
+
+.md strong { font-weight: 600; color: var(--color-ink); }
+.md code { font-family: var(--font-mono); font-size: 0.86em; background: var(--color-shade); padding: 0 4px; border-radius: 2px; word-break: break-all; }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel, .blink, .fill-in, .flap { animation: none; }
+}

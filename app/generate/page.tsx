@@ -1,6 +1,9 @@
-import { Suspense } from "react";
-import Generate from "@/components/Generate";
-export const metadata = { title: "Investigating… · Greenlight" };
-export default function Page() {
-  return <Suspense fallback={null}><Generate /></Suspense>;
+import { redirect } from "next/navigation";
+import { slugify } from "@/lib/urlstate";
+
+/** v1 URL. Live generation now happens in place on /guide/<slug>. */
+export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; slug?: string }> }) {
+  const { q = "", slug } = await searchParams;
+  if (!q.trim()) redirect("/");
+  redirect(`/guide/${slug || slugify(q)}?q=${encodeURIComponent(q)}`);
 }

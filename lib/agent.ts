@@ -1,15 +1,15 @@
 import { Guide, type Probe } from "./types";
 import { fetchText, htmlToText, probeAuthorize, probeComposio, probeDevDocs, probeDiscovery } from "./probe";
-import { research, structured } from "./llm";
+import { research, structured, dedupe } from "./llm";
+import { slugify } from "./urlstate";
+
+export { slugify };
 
 export type AgentEvent =
   | { type: "step"; id: string; label: string; status: "running" | "done" | "warn"; detail?: string }
+  | { type: "patch"; patch: Partial<Guide> }
   | { type: "guide"; guide: Guide }
-  | { type: "error"; message: string };
-
-export function slugify(s: string) {
-  return s.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\.(com|io|ai|dev|app|co|org|net)(\/.*)?$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "app";
-}
+  | { type: "error"; code?: "no_model" | "model_down" | "invalid"; message: string };
 
 const COMPOSIO_CB = "https://backend.composio.dev/api/v3/toolkits/auth/callback";
 
@@ -58,14 +58,15 @@ Rules:
 - Mention that the redirect/callback URL for Composio bring-your-own-app is ${COMPOSIO_CB} in the step where redirect URIs are configured.
 - No marketing fluff. Write for a busy developer.`;
 
-export async function* generateGuide(q: string): AsyncGenerator<AgentEvent> {
+export async function* generateGuide(q: string, opts: { composioSlug?: string } = {}): AsyncGenerator<AgentEvent> {
   const input = parseInput(q);
   const name = input.name;
   const today = new Date().toISOString().slice(0, 10);
   const probes: Probe[] = [];
+  yield { type: "patch", patch: { name, domain: input.domain || "", origin: "generated", verifiedAt: today } };
 
-  yield { type: "step", id: "composio", label: `Checking Composio's toolkit directory for ${name}`, status: "running" };
-  yield { type: "step", id: "research", label: "Searching developer docs for OAuth setup, scopes and app review", status: "running" };
+  yield { type: "step", id: "composio", label: `Composio directory: is ${name} managed?`, status: "running" };
+  yield { type: "step", id: "research", label: "Researching OAuth setup, scopes and app review", status: "running" };
 
   const researchPrompt = `Research the OAuth 2.0 app registration and approval process for "${name}"${input.domain ? ` (website: ${input.domain})` : ""} as of today (${today}), for a developer whose AI agent needs end users to connect their ${name} accounts.
 Cover, citing official documentation URLs:
@@ -76,11 +77,13 @@ Cover, citing official documentation URLs:
 5. Limits before approval (test users, install caps, dev mode), costs, and common rejection reasons or gotchas.
 Be specific and current. Prefer the provider's own docs.`;
 
-  const [comp, res] = await Promise.allSettled([probeComposio(name), research(researchPrompt)]);
+  const compP = probeComposio(name, opts.composioSlug);
+  const resP = research(researchPrompt);
+  resP.catch(() => {});
 
   let composio: Guide["composio"] = { managed: "unknown", note: "", evidence: "uncertain" };
-  if (comp.status === "fulfilled") {
-    const c = comp.value;
+  try {
+    const c = await compP;
     if (c.probe) probes.push(c.probe);
     composio = {
       managed: c.managed, slug: c.slug, evidence: c.slug ? "tested" : "uncertain",
@@ -88,67 +91,77 @@ Be specific and current. Prefer the provider's own docs.`;
         : c.managed === "not_available" ? "Composio lists this toolkit but you must bring your own OAuth app (client ID + secret) in a custom auth config."
         : c.slug ? `Composio lists this toolkit (auth: ${c.schemes.join(", ") || "see docs"}).` : "Not found in Composio's toolkit directory under this name.",
     };
-    yield { type: "step", id: "composio", label: "Composio toolkit directory", status: c.slug ? "done" : "warn", detail: c.probe?.result };
-  } else {
-    yield { type: "step", id: "composio", label: "Composio toolkit directory", status: "warn", detail: "Check failed" };
+    yield { type: "step", id: "composio", label: "Composio directory", status: c.slug ? "done" : "warn", detail: c.probe?.result };
+  } catch {
+    yield { type: "step", id: "composio", label: "Composio directory", status: "warn", detail: "Check failed" };
   }
+  yield { type: "patch", patch: { composio, probes: [...probes] } };
 
-  if (res.status === "rejected") {
-    const why = String(res.reason?.message || res.reason);
-    const noKey = /No GEMINI_API_KEY|credit card|No AI Gateway credentials|401|403/.test(why) && !process.env.GEMINI_API_KEY;
-    yield { type: "step", id: "research", label: "Web research", status: "warn", detail: noKey ? "No model key is configured on this deployment yet" : why.slice(0, 240) };
-    // Still run the live probes so the developer gets something real.
-    const guess = input.domain || `${slugify(name).replace(/-/g, "")}.com`;
-    yield { type: "step", id: "probe", label: `Probing ${guess} for OAuth/OIDC discovery and developer portal`, status: "running" };
-    const [d, dd] = await Promise.all([probeDiscovery(guess), probeDevDocs(guess)]);
-    const az = d.found?.authorization_endpoint ? await probeAuthorize(d.found.authorization_endpoint) : null;
-    yield { type: "step", id: "probe", label: "Live endpoint probes", status: d.found ? "done" : "warn", detail: [...d.probes, dd.probe, ...(az ? [az] : [])].map((p) => p.result).join(" · ").slice(0, 400) };
-    yield { type: "error", message: noKey
-      ? "Live research is off on this deployment: no model key is set (GEMINI_API_KEY). The Composio check and endpoint probes above ran live. Ready guides in the library work as normal."
-      : "The research model isn't reachable right now (rate limit or outage). The checks above still ran. Try again in a minute." };
-    return;
+  let r: Awaited<ReturnType<typeof research>> | null = null;
+  let researchErr = "";
+  try { r = await resP; } catch (e: any) { researchErr = String(e?.message || e); }
+
+  if (r) yield { type: "step", id: "research", label: "Research", status: "done", detail: `${r.sources.length} sources via ${r.model}${r.grounded ? "" : " (ungrounded: verifying by reading pages)"}` };
+  else {
+    const noKey = /NO_MODEL_KEY|No GEMINI_API_KEY|credit card|401|403/.test(researchErr);
+    yield { type: "step", id: "research", label: "Research", status: "warn", detail: noKey ? "No model key on this deployment. Continuing with live checks only." : researchErr.slice(0, 220) };
   }
-  const r = res.value;
-  yield { type: "step", id: "research", label: "Web research", status: "done", detail: `${r.sources.length} sources via ${r.model}` };
 
   // Resolve domain
-  let domain = input.domain || (r.text.match(/OFFICIAL_DOMAIN:\s*\**\s*(?:https?:\/\/)?(?:www\.)?([a-z0-9.-]+\.[a-z]{2,})/i)?.[1] ?? "");
+  let domain = input.domain || (r?.text.match(/OFFICIAL_DOMAIN:\s*\**\s*(?:https?:\/\/)?(?:www\.)?([a-z0-9.-]+\.[a-z]{2,})/i)?.[1] ?? "");
   if (!domain) domain = `${slugify(name).replace(/-/g, "")}.com`;
   domain = domain.toLowerCase();
+  yield { type: "patch", patch: { domain } };
 
   // Live probes
-  yield { type: "step", id: "probe", label: `Probing ${domain} for OAuth/OIDC discovery and developer portal`, status: "running" };
+  yield { type: "step", id: "probe", label: `Live probes on ${domain}: discovery, portal, authorize`, status: "running" };
   const [disc, docs] = await Promise.all([probeDiscovery(domain), probeDevDocs(domain)]);
   probes.push(...disc.probes, docs.probe);
   let authorizeEndpoint = disc.found?.authorization_endpoint;
-  if (!authorizeEndpoint) {
+  if (!authorizeEndpoint && r) {
     const m = r.text.match(/https:\/\/[a-z0-9.-]*\/[a-z0-9/_.-]*(?:oauth|authorize)[a-z0-9/_.-]*/i);
     if (m && /authoriz/i.test(m[0])) authorizeEndpoint = m[0];
   }
-  if (authorizeEndpoint) probes.push(await probeAuthorize(authorizeEndpoint));
-  yield { type: "step", id: "probe", label: "Live endpoint probes", status: disc.found || authorizeEndpoint ? "done" : "warn", detail: probes.slice(-3).map((p) => p.result).join(" · ").slice(0, 300) };
+  const az = authorizeEndpoint ? await probeAuthorize(authorizeEndpoint) : null;
+  if (az) probes.push(az);
+  const probeNote = [...disc.probes, docs.probe, ...(az ? [az] : [])].map((p) => p.result).filter(Boolean).join(" · ").slice(0, 300);
+  yield { type: "step", id: "probe", label: "Live probes", status: disc.found || authorizeEndpoint || docs.urls.length ? "done" : "warn", detail: probeNote };
+  yield { type: "patch", patch: { probes: [...probes], console: docs.urls[0] } };
 
-  // Read the most relevant pages ourselves
+  // Read the most relevant pages ourselves (also the fallback when research is ungrounded or missing)
   const bare = domain.split(".").slice(-2).join(".");
-  const ranked = r.sources
+  const candidates = dedupe([...(r?.sources || []), ...docs.urls.map((u) => ({ title: safeHost(u), url: u }))])
     .filter((s) => !/vertexaisearch|google\.com\/search/.test(s.url))
     .sort((a, b) => score(b.url, bare) - score(a.url, bare))
-    .slice(0, 3);
-  yield { type: "step", id: "read", label: `Reading ${ranked.length || "no"} official pages`, status: "running", detail: ranked.map((s) => safeHost(s.url)).join(", ") };
-  const pages = await Promise.all(ranked.map(async (s) => {
+    .slice(0, r?.grounded ? 3 : 4);
+  yield { type: "step", id: "read", label: `Reading ${candidates.length || "no"} official page${candidates.length === 1 ? "" : "s"}`, status: "running", detail: candidates.map((s) => safeHost(s.url)).join(", ") };
+  const pages = await Promise.all(candidates.map(async (s) => {
     const p = await fetchText(s.url, 7000);
     if (!p || p.status !== 200) return null;
     const t = htmlToText(p.text);
+    const title = (p.text.match(/<title[^>]*>([^<]{3,120})<\/title>/i)?.[1] || s.title).trim();
     const idx = Math.max(0, t.search(/oauth|scope|review|verification|redirect/i) - 200);
-    return { url: s.url, text: t.slice(idx, idx + 3500) };
+    return { url: s.url, title, text: t.slice(idx, idx + 3500) };
   }));
-  const read = pages.filter(Boolean) as { url: string; text: string }[];
-  yield { type: "step", id: "read", label: "Read official pages", status: read.length ? "done" : "warn", detail: read.length ? `${read.length} pages read` : "Pages were not fetchable (JS-only or blocked); relying on search results" };
+  const read = pages.filter(Boolean) as { url: string; title: string; text: string }[];
+  yield { type: "step", id: "read", label: "Read official pages", status: read.length ? "done" : "warn", detail: read.length ? `${read.length} page${read.length > 1 ? "s" : ""} read: ${[...new Set(read.map((p) => safeHost(p.url)))].join(", ")}` : "Pages not fetchable (JS-only or blocked)" };
+  const sourceList = dedupe([...(r?.sources || []), ...read.map((p) => ({ title: p.title, url: p.url }))]).slice(0, 14);
+  yield { type: "patch", patch: { sources: sourceList } };
+
+  if (!r) {
+    const noKey = /NO_MODEL_KEY|No GEMINI_API_KEY|credit card|401|403/.test(researchErr);
+    yield {
+      type: "error", code: noKey ? "no_model" : "model_down",
+      message: noKey
+        ? "Live research needs a model key, and this deployment has none yet. Everything above ran live: the Composio check, endpoint probes and the docs we could read."
+        : "The research model isn't reachable right now (rate limit or outage). The live checks above still ran.",
+    };
+    return;
+  }
 
   // Structure
-  yield { type: "step", id: "write", label: "Writing the guide: scopes → tiers, critical path, agent vs you", status: "running" };
-  const sourceList = r.sources.slice(0, 14);
-  const user = `Provider: ${name}\nDomain: ${domain}\nToday: ${today}\nComposio managed OAuth: ${composio.managed}\n\nSOURCES (cite by index):\n${sourceList.map((s, i) => `[${i}] ${s.title} — ${s.url}`).join("\n")}\n\nRESEARCH NOTES:\n${r.text.slice(0, 9000)}\n\nPAGE EXCERPTS (fetched live):\n${read.map((p) => `--- ${p.url}\n${p.text}`).join("\n").slice(0, 9000)}\n\nLIVE PROBES:\n${probes.map((p) => `- ${p.label}: ${p.result}`).join("\n")}`;
+  yield { type: "step", id: "write", label: "Structuring: scopes → tiers, critical path, agent vs you", status: "running" };
+  const user = `Provider: ${name}\nDomain: ${domain}\nToday: ${today}\nComposio managed OAuth: ${composio.managed}\nResearch grounded in live web search: ${r.grounded ? "yes" : "NO - trust only claims supported by PAGE EXCERPTS; mark the rest uncertain"}\n\nSOURCES (cite by index):\n${sourceList.map((s, i) => `[${i}] ${s.title} — ${s.url}`).join("\n")}\n\nRESEARCH NOTES:\n${r.text.slice(0, 9000)}\n\nPAGE EXCERPTS (fetched live):\n${read.map((p) => `--- ${p.url}\n${p.text}`).join("\n").slice(0, 9000)}\n\nLIVE PROBES:\n${probes.map((p) => `- ${p.label}: ${p.result}`).join("\n")}`;
 
   let guide: Guide | null = null;
   let lastErr = "";
@@ -157,7 +170,7 @@ Be specific and current. Prefer the provider's own docs.`;
     try {
       const { json, model } = await structured(SYSTEM, attempt ? `${user}\n\nYour previous output failed validation: ${lastErr}. Return valid JSON matching the schema exactly.` : user);
       modelUsed = model;
-      const fixed = normalize(json, { name, domain, slug: slugify(name), composio, probes, sources: sourceList, today, model });
+      const fixed = normalize(json, { name, domain, slug: slugify(name), composio, probes, sources: sourceList, today, model: `${r.model} → ${model}` });
       const parsed = Guide.safeParse(fixed);
       if (parsed.success) guide = parsed.data;
       else lastErr = parsed.error.issues.slice(0, 5).map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -166,8 +179,8 @@ Be specific and current. Prefer the provider's own docs.`;
     }
   }
   if (!guide) {
-    yield { type: "step", id: "write", label: "Writing the guide", status: "warn", detail: lastErr };
-    yield { type: "error", message: "The guide couldn't be assembled. The model output didn't validate. Try again." };
+    yield { type: "step", id: "write", label: "Structuring", status: "warn", detail: lastErr };
+    yield { type: "error", code: "invalid", message: "The guide couldn't be assembled: the model output didn't validate twice." };
     return;
   }
   yield { type: "step", id: "write", label: "Guide written", status: "done", detail: `${guide.capabilities.length} capabilities · ${guide.steps.length} steps · ${modelUsed}` };

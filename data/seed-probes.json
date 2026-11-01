@@ -100,6 +100,13 @@
     "result": "HTTP 200 — endpoint is live",
     "ok": true,
     "at": "2026-10-30"
+   },
+   {
+    "label": "Manifest validation API (unauthenticated)",
+    "url": "https://slack.com/api/apps.manifest.validate",
+    "result": "Responds {\"ok\":false,\"error\":\"not_authed\"}: live, but validating a manifest needs an app configuration token from api.slack.com/apps, so an agent can pre-validate only after you generate one",
+    "ok": true,
+    "at": "2026-11-01"
    }
   ],
   "disc": {

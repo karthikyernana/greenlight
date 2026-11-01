@@ -1,24 +1,27 @@
 import type { Metadata } from "next";
 import { getGuide, libraryIndex } from "@/lib/library";
 import GuideView from "@/components/GuideView";
-import SharedGuide from "@/components/SharedGuide";
-import { headline } from "@/lib/plan";
+import LiveGuide from "@/components/LiveGuide";
+import { headline, verdict, defaultSelection } from "@/lib/plan";
+import { parseNeed } from "@/lib/urlstate";
 
-type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ need?: string }> };
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ need?: string; q?: string; cs?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const g = getGuide(slug);
-  if (!g) return { title: "Greenlight guide" };
+  if (!g) return { title: `${slug} · Greenlight` };
   const h = headline(g);
-  return { title: `${g.name} OAuth approval: ${h.difficulty.label}, ${h.wait} · Greenlight`, description: g.summary };
+  const v = verdict(g, defaultSelection(g));
+  return { title: `${g.name}: ${h.wait} to OAuth approval · Greenlight`, description: `${v.lead} ${v.pole || ""} ${g.summary}`.trim() };
 }
 
 export default async function Page({ params, searchParams }: Props) {
   const { slug } = await params;
-  const { need } = await searchParams;
+  const { need, q, cs } = await searchParams;
   const g = getGuide(slug);
-  if (g) return <GuideView guide={g} initialNeed={need?.split(",")} />;
+  if (g) return <GuideView guide={g} initialNeed={parseNeed(need)} />;
   const entry = libraryIndex().find((i) => i.slug === slug);
-  return <SharedGuide slug={slug} name={entry?.name || slug.replace(/-/g, " ")} need={need?.split(",")} />;
+  const name = q?.trim() || entry?.name || slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return <LiveGuide key={slug} slug={slug} name={name} q={q || entry?.name} composioSlug={cs || entry?.composioSlug} need={parseNeed(need)} />;
 }

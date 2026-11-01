@@ -132,7 +132,11 @@ export async function probeDevDocs(domain: string): Promise<{ urls: string[]; pr
   const bare = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
   const cands = [`https://developers.${bare}`, `https://developer.${bare}`, `https://docs.${bare}`, `https://${bare}/developers`, `https://${bare}/docs`, `https://api.${bare}`];
   const res = await Promise.all(cands.map(async (u) => ({ u, r: await fetchText(u, 5000) })));
-  const ok = res.filter((x) => x.r && x.r.status === 200 && /api|oauth|developer|docs/i.test(x.r.text.slice(0, 50000))).map((x) => x.r!.finalUrl);
+  // The page title must look like developer docs: "calendly.com/docs" is somebody's booking page, not documentation.
+  const title = (t: string) => (t.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] || "").trim();
+  const ok = res
+    .filter((x) => x.r && x.r.status === 200 && /developer|docs|documentation|\bapi\b|reference/i.test(title(x.r.text)) && /oauth|api|developer/i.test(x.r.text.slice(0, 80000)))
+    .map((x) => x.r!.finalUrl);
   const uniq = [...new Set(ok)];
   return { urls: uniq, probe: { label: "Developer portal reachability", url: cands[0], result: uniq.length ? `Reachable: ${uniq.slice(0, 3).join(", ")}` : "No public developer portal at common URLs", ok: uniq.length > 0, at: today() } };
 }

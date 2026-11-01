@@ -28,12 +28,12 @@ export async function POST(req: Request) {
         const slug = body.slug ? String(body.slug) : slugify(q);
         const cached = getGuide(slug);
         if (cached && !body.fresh) {
-          send({ type: "step", id: "composio", label: "Found a ready guide in the library", status: "done", detail: cached.origin === "curated" ? "Hand-researched guide" : `Generated ${cached.verifiedAt}, served from cache` });
+          send({ type: "step", id: "composio", label: "Found a ready guide", status: "done", detail: cached.origin === "curated" ? "Hand-researched guide" : `Generated ${cached.verifiedAt}, served from cache` });
           send({ type: "guide", guide: cached, cached: true });
           return;
         }
         if (limited(ip)) { send({ type: "error", message: "Rate limit reached (20 live investigations per hour). Browse the ready guides meanwhile." }); return; }
-        for await (const ev of generateGuide(q)) {
+        for await (const ev of generateGuide(q, { composioSlug: body.composioSlug ? String(body.composioSlug) : undefined })) {
           if (ev.type === "guide") {
             const g = { ...ev.guide, slug };
             putGuide(g);

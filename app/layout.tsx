@@ -1,50 +1,58 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Host_Grotesk, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
+import { libraryIndex } from "@/lib/library";
+import HeaderBar from "@/components/HeaderBar";
 import "./globals.css";
 
-const sans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
-const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
-const display = Instrument_Serif({ subsets: ["latin"], weight: "400", variable: "--font-instrument" });
+const host = Host_Grotesk({ subsets: ["latin"], variable: "--font-host", display: "swap" });
+const jet = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jet", display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://oauth-greenlight.vercel.app"),
-  title: "Greenlight: how long until your OAuth app can launch?",
-  description: "Scope-aware OAuth app setup & approval guides for AI agent builders. Know the wait, start the slow parts today.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://oauth-greenlight-v2.vercel.app"),
+  title: "Greenlight: the runway from OAuth app to approval",
+  description: "Pick an app and what your agent needs. See how long approval takes, what blocks it, and get the setup kit an agent can start on today.",
 };
-export const viewport: Viewport = { themeColor: "#f5f3ee", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#f5f5f2", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const index = libraryIndex();
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable}`}>
+    <html lang="en" className={`${host.variable} ${jet.variable}`}>
       <body className="min-h-screen">
-        <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Logo />
-            <span className="text-[15px] font-semibold tracking-tight">Greenlight</span>
-          </Link>
-          <nav className="flex items-center gap-5 text-sm text-ink-2">
-            <Link href="/#library" className="hover:text-ink">Library</Link>
-            <Link href="/why" className="hover:text-ink">Why</Link>
-            <a href="https://github.com/karthikyernana/greenlight" className="hover:text-ink" target="_blank" rel="noreferrer">GitHub</a>
-          </nav>
+        <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-surface focus:px-3 focus:py-1">Skip to content</a>
+        <header className="border-b rule bg-paper/95 backdrop-blur-[2px] sticky top-0 z-30">
+          <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-4 px-4 sm:px-6">
+            <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Greenlight home">
+              <Lamp />
+              <span className="text-[15px] font-semibold tracking-[-0.01em]">Greenlight</span>
+            </Link>
+            <HeaderBar index={index} />
+            <nav className="ml-auto flex shrink-0 items-center gap-4 text-[13px] text-ink-2">
+              <span className="label hidden md:inline num">{index.length} apps</span>
+              <a href="https://github.com/karthikyernana/greenlight/tree/v2#readme" className="hover:text-ink" target="_blank" rel="noreferrer">README</a>
+            </nav>
+          </div>
         </header>
-        {children}
-        <footer className="mx-auto mt-24 max-w-6xl border-t hairline px-5 py-8 text-xs text-ink-3">
-          Greenlight is a take-home prototype for Composio. Guides combine hand research, cited docs and live public probes. Nothing here is legal or provider advice. Check the sources before you submit.
+        <div id="main">{children}</div>
+        <footer className="mx-auto mt-20 max-w-[1240px] border-t rule px-4 py-6 sm:px-6">
+          <p className="label !normal-case !tracking-normal leading-relaxed">
+            Greenlight v2 · take-home prototype for Composio · guides combine hand research, cited docs and live public probes. Not provider or legal advice: check the sources before you submit.
+          </p>
         </footer>
       </body>
     </html>
   );
 }
 
-function Logo() {
+/** Three-aspect signal: two dark lamps, the bottom one lit in signal orange. */
+function Lamp() {
   return (
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
-      <rect x="0.5" y="0.5" width="21" height="21" rx="6" fill="#16150f" />
-      <circle cx="11" cy="6" r="2.2" fill="#3b3a33" />
-      <circle cx="11" cy="11" r="2.2" fill="#3b3a33" />
-      <circle cx="11" cy="16" r="2.4" fill="#3ddc84" />
+    <svg width="14" height="22" viewBox="0 0 14 22" aria-hidden>
+      <rect x="0.5" y="0.5" width="13" height="21" rx="1.5" fill="#0f0f0d" />
+      <circle cx="7" cy="5" r="2.2" fill="#3a3a35" />
+      <circle cx="7" cy="11" r="2.2" fill="#3a3a35" />
+      <circle cx="7" cy="17" r="2.4" fill="#ff4f00" />
     </svg>
   );
 }

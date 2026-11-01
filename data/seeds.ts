@@ -11,7 +11,7 @@ const COMPOSIO_CB = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
 export const seeds: any[] = [
   // ───────────────────────────── GitHub ─────────────────────────────
   {
-    slug: "github", name: "GitHub", domain: "github.com", category: "Developer tools",
+    slug: "github", gate: "None", name: "GitHub", domain: "github.com", category: "Developer tools",
     summary: "The easiest provider on the list: register an app in two minutes, no review for any scope. The only real decision is OAuth app vs GitHub App.",
     console: "https://github.com/settings/developers", appType: "GitHub App (recommended) or OAuth app",
     composio: { managed: "available", slug: "github", note: "Composio's managed GitHub OAuth app works today, so you can ship without registering anything. Register your own when you want your name on the consent screen or your own rate-limit pool.", evidence: "tested" },
@@ -47,7 +47,7 @@ export const seeds: any[] = [
 
   // ───────────────────────────── Notion ─────────────────────────────
   {
-    slug: "notion", name: "Notion", domain: "notion.com", category: "Productivity",
+    slug: "notion", gate: "None", name: "Notion", domain: "notion.com", category: "Productivity",
     summary: "Self-serve. A public connection works for any workspace the moment you create it. Notion has no per-scope review; users choose which pages to share. Marketplace listing is optional.",
     console: "https://app.notion.com/developers/connections", appType: "Public connection (OAuth 2.0)",
     composio: { managed: "available", slug: "notion", note: "Composio-managed auth works today. Composio notes that actions then show “Composio” as the actor, not your app, which is a reason to bring your own.", evidence: "tested" },
@@ -83,7 +83,7 @@ export const seeds: any[] = [
 
   // ───────────────────────────── Slack ─────────────────────────────
   {
-    slug: "slack", name: "Slack", domain: "slack.com", category: "Communication",
+    slug: "slack", gate: "Workspace admins, then Marketplace review", name: "Slack", domain: "slack.com", category: "Communication",
     summary: "You can distribute without review. Workspace admin policies are the real gate: strict workspaces block apps that aren't in the Marketplace, and Marketplace listing needs 10 active installs plus a review that can take weeks.",
     console: "https://api.slack.com/apps", appType: "Slack app (OAuth v2)",
     composio: { managed: "available", slug: "slack", note: "Composio-managed works today, but its app isn't in the Slack Marketplace yet, so users see a warning and strict workspaces need admin approval. Composio says a Marketplace review is in progress.", evidence: "tested" },
@@ -114,12 +114,15 @@ export const seeds: any[] = [
       { title: "Slack Docs: Distributing in the Marketplace", url: "https://docs.slack.dev/slack-marketplace/distributing-your-app-in-the-slack-marketplace/" },
       { title: "Slack Docs: Marketplace guidelines", url: "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements" },
     ],
+    checks: [
+      { claim: "Marketplace submissions need 10 active workspace installs, held for the whole review", status: "confirmed", note: "Slack changelog, Sep 1 2026: 'at least 10 installations on active workspaces… throughout the entire duration of the review' (back up from a temporary lower bar).", url: "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement", at: "2026-11-01" },
+    ],
     verifiedAt: V,
   },
 
   // ───────────────────────────── HubSpot ─────────────────────────────
   {
-    slug: "hubspot", name: "HubSpot", domain: "hubspot.com", category: "CRM",
+    slug: "hubspot", gate: "Install cap (25) until listed", name: "HubSpot", domain: "hubspot.com", category: "CRM",
     summary: "Usable right away, but capped by install count: 10 allow-listed accounts for private distribution, 25 for an unlisted Marketplace app. Getting past that needs a Marketplace listing, which requires 3 active installs and a review.",
     console: "https://developers.hubspot.com", appType: "App on the HubSpot developer platform (OAuth)",
     composio: { managed: "available", slug: "hubspot", note: "Composio-managed works, but HubSpot hasn't approved Composio's app yet, so users accept an “unverified app” warning. Composio gives no date for approval.", evidence: "tested" },
@@ -152,12 +155,15 @@ export const seeds: any[] = [
       { title: "HubSpot: Authentication overview", url: "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/overview" },
       { title: "Composio: HubSpot toolkit FAQ", url: "https://docs.composio.dev/toolkits/hubspot" },
     ],
+    checks: [
+      { claim: "Install caps: 10 allowlisted accounts (private), 25 before listing, unlimited after; AUP gates installs", status: "confirmed", note: "HubSpot 'Manage apps' page (last modified Aug 6 2026) states all four limits and that unsigned-AUP apps install only in developer test accounts.", url: "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/manage-apps-in-hubspot", at: "2026-11-01" },
+    ],
     verifiedAt: V,
   },
 
   // ───────────────────────────── Microsoft (Outlook / Graph) ─────────────────────────────
   {
-    slug: "outlook", name: "Microsoft Outlook (Graph)", domain: "microsoft.com", category: "Email & calendar",
+    slug: "outlook", gate: "Publisher verification", name: "Microsoft Outlook (Graph)", domain: "microsoft.com", category: "Email & calendar",
     summary: "Registering the app takes minutes. Trust is the gate: without publisher verification, users in other tenants often can't consent, and many orgs require an admin to approve mail scopes regardless.",
     console: "https://entra.microsoft.com", appType: "Multitenant app registration (Microsoft Entra ID)",
     composio: { managed: "available", slug: "outlook", note: "Composio-managed works. Org tenants may still show “Needs admin approval”, which is a tenant policy and not something Composio controls.", evidence: "tested" },
@@ -197,7 +203,7 @@ export const seeds: any[] = [
 
   // ───────────────────────────── Gmail / Google ─────────────────────────────
   {
-    slug: "gmail", name: "Gmail (Google)", domain: "google.com", category: "Email & calendar",
+    slug: "gmail", gate: "CASA security assessment", name: "Gmail (Google)", domain: "google.com", category: "Email & calendar",
     summary: "Sign-in is instant. Send-only is a sensitive scope (about 10 business days of review). Reading mail is restricted: Google verification plus an annual third-party CASA security assessment, around 6+ weeks. Until then you're capped at 100 test users whose tokens expire every 7 days.",
     console: "https://console.cloud.google.com/auth/overview", appType: "Google Cloud OAuth client (Web application)",
     composio: { managed: "available", slug: "gmail", note: "Composio-managed Gmail skips verification and CASA for you. Users see “Composio” on the consent screen, not your app. Bring your own once you want your own brand there.", evidence: "tested" },
@@ -237,12 +243,16 @@ export const seeds: any[] = [
       { title: "Google Cloud Help: Security assessment", url: "https://support.google.com/cloud/answer/13465431?hl=en" },
       { title: "Composio: Gmail toolkit FAQ", url: "https://docs.composio.dev/toolkits/gmail" },
     ],
+    checks: [
+      { claim: "Brand verification takes 2–3 business days; restricted-scope verification takes weeks and needs a security assessment at least every 12 months", status: "confirmed", note: "Google's restricted-scope page: brand verification 'typically takes 2-3 business days'; restricted verification 'can potentially take several weeks'; reassessment 'at least every 12 months' after the assessor's LOA.", url: "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification", at: "2026-11-01" },
+      { claim: "Sensitive-scope verification takes about 10 business days", status: "unverifiable", note: "The Verification FAQ that stated this now renders its answers client-side, and the sensitive-scope page gives no number. Kept as Google's earlier estimate; treat as approximate.", url: "https://support.google.com/cloud/answer/13463817", at: "2026-11-01" },
+    ],
     verifiedAt: V,
   },
 
   // ───────────────────────────── Salesforce ─────────────────────────────
   {
-    slug: "salesforce", name: "Salesforce", domain: "salesforce.com", category: "CRM",
+    slug: "salesforce", gate: "AppExchange security review", name: "Salesforce", domain: "salesforce.com", category: "CRM",
     summary: "Changed in 2026: since Spring '26 you can't create new Connected Apps (unless Support enables it). Build an External Client App instead. Selling through AppExchange adds a paid security review that takes weeks.",
     console: "https://developer.salesforce.com/signup", appType: "External Client App (ECA)",
     composio: { managed: "available", slug: "salesforce", note: "Composio-managed works for connecting customer orgs. Some customer admins restrict uninstalled apps, which blocks any app, managed or yours.", evidence: "tested" },
@@ -280,7 +290,7 @@ export const seeds: any[] = [
 
   // ───────────────────────────── Instagram (Meta) ─────────────────────────────
   {
-    slug: "instagram", name: "Instagram (Meta)", domain: "instagram.com", category: "Social",
+    slug: "instagram", gate: "Business verification + App Review", name: "Instagram (Meta)", domain: "instagram.com", category: "Social",
     summary: "Works for your own accounts on day one (Standard Access). Serving other businesses needs Advanced Access: Business Verification first, then App Review with a screencast for every permission. Only Business and Creator accounts are supported.",
     console: "https://developers.facebook.com/apps", appType: "Meta app with Instagram API (Instagram Login)",
     composio: { managed: "available", slug: "instagram", note: "Composio-managed works for basic flows. Composio notes that comment management needs permissions Meta must approve on the app, so some actions need your own app.", evidence: "tested" },
@@ -317,7 +327,7 @@ export const seeds: any[] = [
 
   // ───────────────────────────── LinkedIn ─────────────────────────────
   {
-    slug: "linkedin", name: "LinkedIn", domain: "linkedin.com", category: "Social",
+    slug: "linkedin", gate: "Partner vetting", name: "LinkedIn", domain: "linkedin.com", category: "Social",
     summary: "Sign-in and posting as the member are self-serve and instant. Anything company-page or marketing related is partner-gated: you apply, LinkedIn vets you, and approval isn't guaranteed.",
     console: "https://www.linkedin.com/developers/apps", appType: "LinkedIn developer app",
     composio: { managed: "available", slug: "linkedin", note: "Composio-managed works for the standard scopes. LinkedIn won't combine some scopes in one app (e.g. w_member_social with r_organization_admin), so those need your own app.", evidence: "tested" },
@@ -356,18 +366,18 @@ export const seeds: any[] = [
 
   // ───────────────────────────── X (Twitter) ─────────────────────────────
   {
-    slug: "twitter", name: "X (Twitter)", domain: "x.com", category: "Social",
+    slug: "twitter", gate: "Pay per call", name: "X (Twitter)", domain: "x.com", category: "Social",
     summary: "There's no approval queue. Money is the gate: since Feb 2026 the X API is pay-per-use, with no free tier. Composio dropped its managed X app, so you have to bring your own.",
     console: "https://console.x.com", appType: "X developer app (OAuth 2.0 with PKCE)",
     composio: { managed: "not_available", slug: "twitter", note: "Composio removed managed Twitter credentials in Feb 2026. You need your own developer app and credits.", evidence: "tested" },
     capabilities: [
       { id: "read", label: "Read posts & users", scopes: ["tweet.read", "users.read", "offline.access"], tier: "paid", why: "About $0.005 per post read and $0.01 per user read", sources: [0, 2] },
-      { id: "post", label: "Post on behalf of users", scopes: ["tweet.read", "tweet.write", "users.read", "offline.access"], tier: "paid", why: "About $0.015 per post, more if it contains a link", default: true, sources: [0, 3] },
+      { id: "post", label: "Post on behalf of users", scopes: ["tweet.read", "tweet.write", "users.read", "offline.access"], tier: "paid", why: "$0.015 per post, $0.20 if the post contains a link", default: true, sources: [0, 3] },
       { id: "dm", label: "Read/send DMs", scopes: ["dm.read", "dm.write"], tier: "paid", why: "Billed per DM event", sources: [0] },
     ],
     steps: [
       { id: "account", title: "Sign up for a developer account in the Developer Console", detail: "console.x.com. Accept the developer terms and describe your use case.", owner: "you", human: "Sign up with the X account that will own the app", activeMinutes: 15, link: "https://console.x.com", sources: [1] },
-      { id: "credits", title: "Add a payment method and buy credits", detail: "Prepaid credits are deducted per request, and calls fail at zero. Set a spending limit and auto-recharge. New accounts can earn up to $70 in one-time free credits.", owner: "you", human: "Add a card, buy credits and set a cap", activeMinutes: 10, cost: "Pay-per-use; no minimum", sources: [0, 4] },
+      { id: "credits", title: "Add a payment method and buy credits", detail: "Prepaid credits are deducted per request, and calls fail at zero. Set a spending limit and auto-recharge. First-time buyers get $20 in free credits, plus a match of the first auto-recharge up to $50. Pay-per-use is capped at 3M post reads a month.", owner: "you", human: "Add a card, buy credits and set a cap", activeMinutes: 10, cost: "Pay-per-use; no minimum", sources: [0, 4] },
       { id: "app", title: "Create the app, set Read+Write, OAuth 2.0", detail: "User authentication settings: type Web App, callback URL (Composio BYO: " + COMPOSIO_CB + "), website URL. Posting needs a user-context token, not the app bearer token.", owner: "both", agent: "Configure user auth settings and the callback; test PKCE", human: "Create it in the console", activeMinutes: 15, sources: [1, 3] },
       { id: "budget", title: "Model your per-user cost", detail: "Agents that read timelines can burn credits fast. Cache reads and dedupe.", owner: "agent", agent: "Estimate monthly cost from expected calls per user", activeMinutes: 30, sources: [0] },
     ],
@@ -386,6 +396,10 @@ export const seeds: any[] = [
       { title: "Outstand: X API pricing 2026 (post costs)", url: "https://www.outstand.so/blog/x-api-pricing" },
       { title: "X Docs: Overview (free credit incentives)", url: "https://docs.x.com/" },
       { title: "Composio: Twitter toolkit FAQ (managed credentials removed)", url: "https://docs.composio.dev/toolkits/twitter" },
+    ],
+    checks: [
+      { claim: "Posting costs about $0.015, 'more if it contains a link'", status: "corrected", note: "X pricing page: Post create $0.015, but a post containing a URL is $0.20 per request. Free credits: $20 after first purchase plus a match of the first auto-recharge up to $50. Pay-per-use is capped at 3M post reads a month.", url: "https://docs.x.com/x-api/getting-started/pricing", at: "2026-11-01" },
+      { claim: "Composio has no managed X/Twitter OAuth app", status: "confirmed", note: "Toolkit page still reads 'Composio-managed OAuth not available'.", url: "https://docs.composio.dev/toolkits/twitter", at: "2026-11-01" },
     ],
     verifiedAt: V,
   },

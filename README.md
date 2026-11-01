@@ -1,129 +1,142 @@
-# Greenlight
+# Greenlight v2
 
-**How long until your OAuth app can launch? Start the slow parts today.**
+**The runway from "I need a client ID" to "real users can connect".**
 
-Live: https://oauth-greenlight.vercel.app · Product memo: https://oauth-greenlight.vercel.app/why
+Live: **https://oauth-greenlight-v2.vercel.app** · v1 (unchanged): https://oauth-greenlight.vercel.app · branch `v2`
 
-Greenlight helps developers building AI agents get their own OAuth app approved with a provider (Gmail, Salesforce, LinkedIn…) so their users can connect accounts. You pick an app and **what your agent needs to do**. Greenlight then shows how hard it is, the realistic wait, what blocks approval, which steps an agent can do for you, and which long waits to start today. Apps outside the library are investigated live by an agent and get a shareable guide.
+Developers building AI agents need their own OAuth app approved by Gmail, Salesforce, Slack and co. before strangers can connect accounts. Creating the client takes five minutes. Approval takes anywhere from zero to six months, and **the scopes you ask for decide which**. Greenlight tells you how long, what blocks you, what an agent can do for you right now, and hands you the artifacts to start.
 
-Built as a take-home for Composio's APM (Integrations) role.
+Built as a take-home for Composio's APM (Toolkits) role.
 
 ---
 
-## The problem, and the insight
+## 30-second tour
 
-Creating a client ID takes five minutes on every provider. What's unpredictable is **approval**, and that depends almost entirely on **the scopes you request**:
+1. **Type an app.** The landing page is one command bar over a departure board of 100 apps (16 with full guides, 84 investigated on demand). Typing filters live. `Enter` opens a guide; `Enter` on anything unknown (a name or a URL) starts an agent investigation **on the same page**.
+2. **Read one line.** `Read email: 5w–2mo to live. Long pole: CASA security assessment.` Then three numbers (difficulty, hands-on effort, wait) and a runway from Today to Live, split into Agent / You / Provider lanes.
+3. **Change what your agent needs.** Capability chips sit on the runway. Untick "Read email", tick "Send email only" and Gmail drops from ~2 months to ~2–3 weeks. Defaults are preselected, so zero clicks already gives an answer.
+4. **Act.** Two buttons. *Copy link* (the URL carries the app and your selection). *Get setup kit* opens redirect URIs (incl. Composio's callback), the least-privilege scope list, a scope-justification draft, a privacy-policy checklist, a demo-video shot list, an email to the provider and a coding-agent handoff prompt. Copy each or download one `.md`.
 
-| Same provider | Scope | What it takes |
+## Why this approach
+
+Composio's bet is that agents, not people, are the primary users of integrations, and that integration work should be an automated, observable function rather than a queue of manual chores. The APM (Toolkits) role is measured on supply: how many apps are live and how healthy they are, with "AI agents before humans" for the repeatable parts.
+
+Greenlight takes that literally in three ways:
+
+- **It does the agent half instead of describing it.** Every step is tagged Agent / You. The setup kit is the agent's output, generated instantly and deterministically from the guide, so it can't hallucinate. Only signing in, legal entities, payments, identity checks, recording video and clicking Submit are left to the human, and the runway shows exactly when those happen.
+- **Managed auth first.** If Composio already runs an approved OAuth app for the toolkit, the guide opens with a *Fast lane*: skip all of this, with the honest trade-offs (Composio's name on the consent screen, unverified-app warnings on HubSpot/Slack). If it doesn't, the guide says so and the runway is the only route.
+- **The same data is an ops tool.** Sort the board by wait and filter to `BYO APP`: that's the list of toolkits where Composio getting its own approval would save every customer weeks. The guides double as the SOP for getting that approval.
+
+## Key decisions
+
+**Scopes, not providers, are the unit.** Provider docs are organised by provider; a developer's question is organised by what the agent must do. Each capability carries a tier (instant → self-serve → review → restricted → partner, or paid) and each step says which capabilities need it. Everything recomputes from the selection.
+
+**A runway, not a document.** Steps form a DAG (`after`). A longest-path schedule gives the wait and the critical path; the runway draws it on a **log time scale** so a 10-minute task and a 6-week review share one ruler. Work that can start at the same moment is merged into one numbered block. Numbers on the runway match the checklist. "Start today" lists the waits with no unfinished prerequisites.
+
+**Design: Swiss-transit ops console.** Approval is a departure board. Light paper, near-black ink, thin rules instead of cards, **one signal colour** (international orange) used only for state: the critical path, long waits, corrections. Provider waits are amber hatching (solid = likely, hatched = worst case). Type is Host Grotesk for UI and JetBrains Mono for data, with tabular numbers. No gradients, no serif display, no pills, no emoji. Evidence is shown with shape, not just colour (● tested, ◐ sourced, hatched ○ uncertain). Details are collapsed by default; the first screen is one sentence, three numbers and the runway.
+
+**One layout for library and live.** A live investigation streams into the exact guide layout: an agent log on top, and the fast lane, probes and sources fill in as they arrive, with skeletons for what's pending. Generated guides are labelled *Agent-generated · not human-reviewed*.
+
+**Two buttons.** v1 had six actions per guide (copy markdown, agent prompt, email draft, share, progress, generate). v2 has *Copy link* and *Get setup kit*; everything else moved into the kit or is a click on the runway.
+
+**No database.** A generated guide is compressed into its own share link (`#g=`), so links never die. Progress ticks are saved per device. The library is static JSON in the repo.
+
+**Scope choice.** 16 guides picked for variety of gate, not popularity:
+
+| App | Gate | Default needs → worst case |
 |---|---|---|
-| Google | `openid email profile` | Nothing. Works even in testing mode |
-| Google | `gmail.send` | Sensitive-scope verification, ~10 business days |
-| Google | `gmail.readonly` | Restricted: verification + annual CASA security assessment, ~6+ weeks |
-| LinkedIn | `w_member_social` | Self-serve, instant |
-| LinkedIn | company pages | Partner program, vetting, not guaranteed |
-
-Provider docs are organised by provider. A developer's question is organised by *what my agent needs*. So the core control in Greenlight is a **capability picker**, and everything else recalculates from it.
-
-## Who it's for
-
-A developer or founder shipping an agent that acts on users' accounts, deciding between Composio-managed auth and their own OAuth app, and needing to know (and tell their team) how long until real users can connect.
-
-## What's in the product
-
-- **Scope-aware guides.** Capability chips (e.g. "Read email", "Send email only", "Post as member"). Difficulty, time to full approval, hands-on effort and the step list all recalculate.
-- **Two plans.** *Launch today* (Composio-managed auth, testing-mode limits, ship low-risk scopes first) next to *Full approval*.
-- **Start the clock today + critical path.** Steps form a DAG (`after`). A longest-path schedule shows hands-on effort vs waiting on the provider, and flags which waits can start right now.
-- **Agent vs you, per step.** What an agent can do (configs, manifests, redirect URIs, privacy policy drafts, reviewer notes, screencast shot lists) vs what needs a human (legal docs, payment, identity, recording, Submit).
-- **Evidence on everything.** Each claim is *Sourced* (cited doc), *Uncertain* (estimate), or backed by *Tested* live probes.
-- **Common rejection reasons** and **If you're blocked** for each provider.
-- **Make progress, not just read.** A checklist with progress saved locally, a share URL that keeps your scope selection, *Copy as Markdown*, *Hand off to a coding agent* (a prompt that does the agent half and stops at the human half), and *Draft email to provider* built from the guide's open questions.
-- **Composio angle.** Live managed-auth status for 100 OAuth toolkits, scraped from the public `docs.composio.dev/toolkits/<slug>` pages, plus the caveats (unverified-app warnings, actor shown as "Composio", dropped apps like X).
-- **Live generation.** Type any app or URL and watch the agent work.
-
-## Scope chosen (and why)
-
-**10 hand-researched guides**, picked to cover every kind of gate rather than the most popular apps:
-
-| App | Gate type | Headline (default needs → all scopes) |
-|---|---|---|
-| GitHub | none | Easy, same day → up to ~3 weeks only if you list on Marketplace |
-| Notion | none (users pick pages) | Easy, same day → ~1–3 weeks only for a Marketplace listing |
-| Slack | workspace policy + install count | Easy, same day → Marketplace: 10 installs + review, ~3 weeks–3 months |
-| HubSpot | install caps (25 before listing) | Moderate, ~2–7 weeks to list → certification 6+ months |
-| Microsoft Outlook (Graph) | publisher verification, admin consent | Moderate, ~1–10 days for mail scopes → Hard with app-only permissions |
-| Gmail (Google) | sensitive/restricted scopes + CASA | Hard, ~5 weeks–2 months to read mail (sign-in instant) |
-| Salesforce | Connected Apps disabled Spring '26 → ECA; AppExchange review | Easy, same day (ECA) → Hard, ~5 weeks–3 months for AppExchange |
-| Instagram (Meta) | Business Verification + App Review per permission | Hard, ~1–5 weeks |
-| LinkedIn | partner-only APIs | Easy (≤2 days) for sign-in/post → Gated, ~3 weeks–3 months for company pages |
-| X (Twitter) | money (pay-per-use, no free tier) | Moderate, same day, with paid credits |
-
-Plus **3 batch-generated guides** (Spotify, Zoom, Shopify) showing the path to 100, and **100 OAuth toolkits** indexed from Composio's directory, each one click from a live-generated guide.
-
-I put the depth into getting the *decision* right (how long, what blocks you, what to start now) rather than covering more apps. A wrong timeline is worse than no guide.
+| GitHub, Notion | none | same day → 1–3 weeks only for a marketplace listing |
+| Calendly *(gen)* | none, one redirect URI per app | same day |
+| X | pay per call ($0.015/post, $0.20 with a link) | same day, with credits |
+| Docusign *(gen)* | paid production account | ≤5 days (often instant) → 1–4 weeks for a public app |
+| Slack | workspace admins, then 10 installs + Marketplace review | same day → ~3 months |
+| HubSpot | install cap (25) until listed | ~2–7 weeks → 6+ months for certification |
+| Dropbox *(gen)* | production review at 50 users, 2-week clock | ~9 days–5 weeks |
+| Outlook | publisher verification, admin consent | ~1–10 days → 2 weeks with app-only access |
+| Gmail | sensitive/restricted scopes + CASA | ~5 weeks–2 months (send-only: 12 days–3 weeks) |
+| Salesforce | ECA self-serve; AppExchange security review | same day → ~3 months |
+| Instagram | business verification + App Review per permission | ~1–5 weeks |
+| LinkedIn | partner vetting for pages/ads | ≤2 days → ~3 months |
+| Spotify, Zoom, Shopify *(gen, v1)* | 5-user cap / security review / App Store review | varies |
 
 ## Tested vs Sourced vs Uncertain
 
-**Tested** means live, *public, unauthenticated* probes run on 2026-10-30 (and on every live generation). No apps were created in any account, nothing was signed into, and nothing was submitted.
+- **Tested** = a live, public, unauthenticated probe: Composio toolkit page (managed or not), OAuth/OIDC discovery (PKCE, dynamic client registration), developer-portal reachability, and a fake-client authorize call. Nothing is created, signed into or submitted. Probes also run on every live investigation.
+- **Sourced** = backed by a cited page, linked per step.
+- **Uncertain** = estimates (mostly review turnaround times providers don't publish), listed per guide under "What we couldn't confirm".
 
-| App | Tested |
-|---|---|
-| All 13 | Composio toolkit page → managed OAuth available / not available |
-| Google | OIDC discovery (PKCE plain/S256); fake-client authorize → redirected to `signin/oauth/error` |
-| Microsoft | OIDC discovery (`/common/v2.0`); authorize endpoint live |
-| Salesforce | OIDC discovery (PKCE S256, **advertises a dynamic client registration endpoint**); fake client → `invalid_client_id` |
-| LinkedIn | OIDC discovery; fake client → "client_id is invalid" |
-| Slack | OIDC discovery (openid/profile/email) |
-| Notion | MCP server's OAuth metadata (**PKCE S256 + dynamic client registration**); authorize redirects to `install-integration` |
-| Instagram/Meta | Facebook OIDC discovery; Instagram authorize live |
-| GitHub, HubSpot, X | authorize endpoints live (GitHub → login redirect) |
-| Zoom, Spotify, Shopify | discovery + fake-client rejections (Zoom: "Invalid client_id") |
+New probe evidence in v2: Slack's `apps.manifest.validate` answers `not_authed` without a configuration token (so an agent can pre-validate a manifest only after you mint one); Calendly, Airtable and Salesforce discovery documents advertise **RFC 7591 dynamic client registration**, which the guide flags as an "Agent lane" (an agent might register a client by API, not a console). Probed, not exercised.
 
-**Sourced** means every step and capability cites the provider's docs (listed per guide). **Uncertain** means review turnaround times that providers don't publish (Slack total, HubSpot listing, Meta, LinkedIn vetting, Microsoft Partner verification, Salesforce review fee). These are marked in the UI and listed in each guide's "Uncertain" panel.
+## Verification log (2026-11-01)
 
-## How live generation works
+Re-checked v1 claims against the live pages. Each result is also shown in the guide's Evidence panel.
 
-`POST /api/generate {q}` streams NDJSON events to the UI:
+| Claim | Result | Source |
+|---|---|---|
+| Slack Marketplace needs 10 active installs, held during review | **Confirmed** (changelog Sep 1 2026; back up from a temporary lower bar) | docs.slack.dev/changelog/2026/09/01/… |
+| HubSpot: 10 allowlisted (private), 25 before listing, unlimited after; AUP gates installs | **Confirmed** (page modified Aug 6 2026) | developers.hubspot.com/…/manage-apps-in-hubspot |
+| Google: brand verification 2–3 business days; restricted scopes take weeks + security assessment every 12 months | **Confirmed** | developers.google.com/…/restricted-scope-verification |
+| Google: sensitive-scope verification ~10 business days | **Unverifiable today** (the FAQ now renders answers client-side; kept as an estimate) | support.google.com/cloud/answer/13463817 |
+| X: posting ~$0.015, "more with a link" | **Corrected**: $0.20 per post containing a URL; free credits are $20 + up to $50 auto-recharge match; 3M post-read monthly cap | docs.x.com/x-api/getting-started/pricing |
+| Composio has no managed X app | **Confirmed** | docs.composio.dev/toolkits/twitter |
+| Composio BYO callback `…/api/v3/toolkits/auth/callback` | **Confirmed, with a nuance now in the kit**: some toolkit defaults still use `…/api/v1/auth-apps/add`; the provider console and the auth config's `oauth_redirect_uri` must match | docs.composio.dev/docs/custom-auth-configs |
+| (new guide) Docusign Go-Live needs 20 successful API calls | **Corrected**: removed Oct 2025; Go-Live now auto-promotes eligible apps | developers.docusign.com/docs/esign-rest-api/go-live/ |
 
-1. **Composio directory check** (public toolkit page, managed-auth status, FAQ).
-2. **Web research** with citations: Gemini + Google Search grounding if `GEMINI_API_KEY` is set; otherwise Vercel AI Gateway (`perplexity/sonar`) via the deployment's OIDC token.
-3. **Live probes** on the resolved domain: RFC 8414 / OIDC discovery across likely hosts, developer-portal reachability, and a fake-client authorize call.
-4. **Read the official pages** (top 3 cited, ranked by domain match) and extract the relevant excerpts.
-5. **Structure** into the shared schema (`lib/types.ts`) with a strict system prompt (tiers, evidence rules, Composio callback URL). Output is normalised and validated with zod, with one repair retry.
+## Live generation
 
-Each call has a retry with backoff and falls through to the next model. If no model is reachable, the Composio check and probes still run and the UI says why.
+`POST /api/generate {q}` streams NDJSON: `step` events (agent log), `patch` events (partial guide: Composio result, probes, sources) and finally `guide`.
 
-**Persistence without a database:** a generated guide is compressed into its share URL (`/guide/<slug>#g=…`), so links never die. It's also cached per server instance and in the visitor's localStorage. Repeat lookups of library apps are instant.
+1. Composio directory check (public toolkit page).
+2. Research: **Gemini** with Google Search grounding → **Groq** (`groq/compound`, built-in web search) → **OpenRouter** free models (ungrounded, so the agent leans on pages it fetches itself and the model is told to mark unsupported claims uncertain) → Vercel AI Gateway. Each retries 429/5xx and walks a model list on 404.
+3. Live probes on the resolved domain.
+4. Reads up to 4 official pages itself.
+5. Structures into the shared zod schema; enums clamped, models can never claim "tested", one repair retry.
 
-## How it scales to 100 (and stays right)
+**Status on the live deployment: no model key is set**, so steps 1, 3 and 4 run and the page explains how to turn research on. `/api/status` reports which providers are configured. The Gemini key in Karthik's vault couldn't be bound in the build sandbox (the host belongs to the Google connector), so the real Gemini call is untested; Gemini, Groq and OpenRouter paths are covered by mocked tests.
 
-1. **Batch generation** with the same agent and schema (`scripts/batch-offline.ts` shows the shape), committed as static JSON (`data/generated/`).
-2. **Human spot-check** before a guide is promoted from *generated* to *curated*. Evidence badges show the reviewer exactly what to check.
-3. **Freshness loop:** re-run probes weekly, re-research monthly, and diff the claims. Watch provider changelogs; 2026 alone brought Salesforce ECAs, X pay-per-use, Slack's 10-install bar and Spotify's 5-user dev mode.
-4. **Outcome data:** developers mark steps done and report real review times, which turns estimates into observed data.
+**To turn it on:** in Vercel project **greenlight-v2** → Settings → Environment Variables, add one of `GEMINI_API_KEY` (aistudio.google.com, free tier), `GROQ_API_KEY` (console.groq.com, free tier) or `OPENROUTER_API_KEY` (free `:free` models) for Production, then redeploy.
 
-## What I'd build next
+## How it scales to 100
 
-- Show the guide inline in the Composio dashboard when a toolkit needs a custom auth config, with the callback URL pre-filled.
-- Browser-agent autopilot for the agent-owned steps (create the client, set redirect URIs) with the user signed in and in control.
-- Review-status tracking: "submitted" starts a countdown, with an overdue nudge and a drafted follow-up.
-- Track dynamic client registration (MCP-style) providers. For agents, "create an OAuth app" may disappear entirely for some providers.
+1. **Batch, same agent, same schema.** `scripts/batch-v2.ts` shows the shape: draft → zod → live probes attached → committed JSON, labelled generated. The board already lists all 100 Composio OAuth toolkits; each is one keypress from a live run.
+2. **Human promotion.** A reviewer clears the Uncertain items and flips `origin` to curated. Evidence badges tell them exactly what to check.
+3. **Freshness.** Re-run probes weekly (cheap, deterministic) and re-verify claims monthly; the per-guide `checks` log records confirmed / corrected / unverifiable with dates. 2026 alone changed Salesforce (ECAs), X (pay-per-use), Slack (10 installs), Spotify (5 users) and Docusign (no 20-call rule).
+4. **Outcome data.** Progress ticks plus "submitted on / approved on" would turn estimated waits into observed ones.
 
-## Known limitations
+## Limitations
 
-- Timelines are estimates unless the provider publishes them, and they're labelled.
-- Generated guides aren't human-reviewed (badge shown).
-- Probes are unauthenticated by design. "Tested" means the endpoints and directory behave as described, not that a full app was approved.
-- No shared database yet. Generated guides live in their URL, the instance cache and localStorage.
+- Review times are estimates unless the provider publishes them; they're marked.
+- Generated guides (6 in the library, plus anything investigated live) are not human-reviewed.
+- Probes are unauthenticated by design: "Tested" means endpoints and directory behave as described, not that an app was approved.
+- Live research is off until a model key is added (see above).
+- Calendar dates on the runway ("Live ≈ 30 Jan") convert business-day estimates roughly (×1.4).
+- No shared database: generated guides live in their link, the server instance cache and the visitor's browser.
 
 ## Run locally
 
 ```bash
 npm install
-GEMINI_API_KEY=... npm run dev     # or AI_GATEWAY_API_KEY=...
+npm run dev                        # optional: GEMINI_API_KEY / GROQ_API_KEY / OPENROUTER_API_KEY
+npm test                           # plan recompute, URL state, kit, search, agent pipeline (mocked)
+npm run typecheck
 npx tsx scripts/probe-seeds.ts     # refresh Tested evidence for curated guides
-npx tsx scripts/batch-offline.ts   # rebuild batch guides + probes
+npx tsx scripts/batch-v2.ts        # rebuild the v2 generated guides with fresh probes
 ```
 
-Env: `GEMINI_API_KEY` (optional; enables Gemini + Google Search grounding), `GEMINI_MODEL` (comma-separated fallbacks, default `gemini-flash-latest,gemini-2.5-flash,gemini-3-flash`), `AI_GATEWAY_API_KEY` (optional; on Vercel the OIDC token is used automatically), `GL_RESEARCH_MODEL`, `GL_STRUCT_MODELS`.
+Env: `GEMINI_API_KEY`, `GEMINI_MODEL` (comma list), `GROQ_API_KEY`, `GROQ_MODEL`, `GROQ_RESEARCH_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `AI_GATEWAY_API_KEY`, `NEXT_PUBLIC_SITE_URL`.
 
 Stack: Next.js 16 (App Router) · TypeScript · Tailwind v4 · zod · Vercel (sin1).
+
+## What changed from v1
+
+| v1 | v2 |
+|---|---|
+| Cream + serif, pills, card grid | Ops-console: paper/ink, rules, one signal colour, grotesk + mono |
+| Hero, search, then card library | One command bar over a sortable departure board |
+| Separate `/generate` page | Live investigation fills the guide layout in place |
+| Timeline + text-heavy sections | Verdict line, 3 numbers, Agent/You/Provider runway; details collapsed |
+| 6 action buttons | 2: Copy link, Get setup kit (7 artifacts) |
+| 13 guides | 16 (Calendly, Dropbox, Docusign added) |
+| Gemini / AI Gateway | + Groq and OpenRouter fallbacks, partial streaming, clean no-key state |
+| — | Verification log, corrected facts (X, Docusign), DCR "agent lane", Slack manifest probe |
+| Mock script | 15 tests (`npm test`) |

@@ -60,6 +60,7 @@ export const Guide = z.object({
   summary: z.string(), // the one-sentence verdict
   console: z.string().optional(), // where to register the app
   appType: z.string().default(""), // e.g. "OAuth app or GitHub App"
+  gate: z.string().optional(), // short gate label for the board, e.g. "CASA security assessment"
   composio: z.object({
     managed: z.enum(["available", "not_available", "unknown"]),
     slug: z.string().optional(),
@@ -75,6 +76,8 @@ export const Guide = z.object({
   probes: z.array(Probe).default([]),
   sources: z.array(Source).default([]),
   verifiedAt: z.string(), // YYYY-MM-DD
+  /** Re-verification of specific claims against live sources (v2). */
+  checks: z.array(z.object({ claim: z.string(), status: z.enum(["confirmed", "corrected", "unverifiable"]), note: z.string(), url: z.string(), at: z.string() })).default([]),
   origin: z.enum(["curated", "generated"]).default("curated"),
   model: z.string().optional(),
 });
@@ -88,9 +91,12 @@ export type IndexEntry = {
   category?: string;
   curated?: boolean;
   generated?: boolean;
-  // headline for cards
+  // headline for the board
   difficulty?: string;
   wait?: string;
   maxWait?: string;
+  waitDays?: number; // default-selection max days (sort key)
+  worstDays?: number;
+  gate?: string;
   tags?: string[];
 };

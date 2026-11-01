@@ -129,3 +129,151 @@ export function headline(g: Guide, sel = defaultSelection(g)) {
 export function worstCase(g: Guide) {
   return headline(g, g.capabilities.map((c) => c.id));
 }
+
+/* ───────────────────────── v2: verdict, critical path, runway ───────────────────────── */
+
+const GATE_BY_TIER: Record<Tier, string> = {
+  instant: "None",
+  self_serve: "None",
+  review: "App review",
+  restricted: "Security / business review",
+  partner: "Partner program",
+  paid: "Pay per call",
+};
+
+/** Short label for what stands between the developer and real users (board column). */
+export function gateLabel(g: Guide): string {
+  if (g.gate) return g.gate;
+  return GATE_BY_TIER[topTier(g, g.capabilities.map((c) => c.id))];
+}
+
+/** Chain of steps that sets the finish date (longest path by worst-case end). */
+export function criticalPath(steps: Step[]): string[] {
+  const { items } = schedule(steps);
+  if (!items.length) return [];
+  const byId = new Map(items.map((i) => [i.id, i]));
+  let cur = items.reduce((a, b) => (b.endMax > a.endMax ? b : a));
+  if (cur.endMax < 0.08) return [];
+  const path = [cur.id];
+  for (let guard = 0; guard < 50; guard++) {
+    const preds = cur.after.map((a) => byId.get(a)).filter(Boolean) as Scheduled[];
+    if (!preds.length) break;
+    cur = preds.reduce((a, b) => (b.endMax > a.endMax ? b : a));
+    path.unshift(cur.id);
+  }
+  return path;
+}
+
+/** The single step that dominates the wait: biggest provider wait on the critical path. */
+export function longPole(steps: Step[]): Step | undefined {
+  const cp = new Set(criticalPath(steps));
+  const onPath = steps.filter((s) => cp.has(s.id) && s.waitDays[1] > 0);
+  if (!onPath.length) return undefined;
+  return onPath.reduce((a, b) => (b.waitDays[1] > a.waitDays[1] ? b : a));
+}
+
+function cleanTitle(t: string) {
+  return t.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** One-line verdict, e.g. "Read email: 5w–2mo to live. Long pole: CASA security assessment." */
+export function verdict(g: Guide, sel: string[]): { lead: string; pole?: string; wait: string } {
+  const h = headline(g, sel);
+  // Name the capabilities that set the pace (the top tier), not the easy ones riding along.
+  const chosen = g.capabilities.filter((c) => sel.includes(c.id));
+  const pacing = chosen.filter((c) => c.tier === h.tier);
+  const labels = (pacing.length ? pacing : chosen).map((c) => c.label);
+  const what = labels.length > 2 ? `${labels.slice(0, 2).join(", ")} +${labels.length - 2}` : labels.join(" + ");
+  const pole = longPole(h.steps);
+  if (h.sch.daysMax < 1) {
+    const paid = h.tier === "paid";
+    return { lead: `${what}: live today.`, pole: paid ? "No review, but every API call is billed." : "No provider review stands in the way.", wait: h.wait };
+  }
+  return { lead: `${what}: ${h.wait} to live.`, pole: pole ? `Long pole: ${cleanTitle(pole.title)}.` : undefined, wait: h.wait };
+}
+
+/** Pseudo-log time scale so a 10-minute task and a 6-week review share one ruler. */
+export function makeScale(maxDays: number) {
+  const span = Math.max(1, maxDays);
+  const k = 1.2; // knee in days
+  const f = (d: number) => Math.log1p(Math.max(0, d) / k);
+  const top = f(span);
+  return (d: number) => Math.min(1, f(d) / top);
+}
+
+export const RULER_TICKS: { d: number; label: string }[] = [
+  { d: 0, label: "Today" },
+  { d: 1, label: "1d" },
+  { d: 3, label: "3d" },
+  { d: 7, label: "1w" },
+  { d: 14, label: "2w" },
+  { d: 30, label: "1mo" },
+  { d: 60, label: "2mo" },
+  { d: 90, label: "3mo" },
+  { d: 180, label: "6mo" },
+  { d: 365, label: "1y" },
+];
+
+export type Lane = "agent" | "you" | "provider";
+export type Bar = {
+  id: string; n: number; lane: Lane; row: number;
+  ids: string[]; ns: number[]; titles: string[]; // >1 when parallel same-start work is merged into one cluster
+  x0: number; x1: number; // 0..1 (solid part)
+  x2?: number; // 0..1 end of uncertain tail (wait max)
+  title: string; critical: boolean; kind: "work" | "wait";
+};
+
+/**
+ * Turns the scheduled DAG into runway bars on three swimlanes.
+ * Work happens in the owner's lane (both = agent preps + you finish), provider waiting gets its own lane.
+ * Overlapping bars in one lane are packed into sub-rows.
+ */
+export function runway(steps: Step[]): { bars: Bar[]; rows: Record<Lane, number>; maxDays: number; scale: (d: number) => number } {
+  const sch = schedule(steps);
+  const maxDays = Math.max(1, sch.daysMax);
+  const scale = makeScale(maxDays);
+  const cp = new Set(criticalPath(steps));
+  const minW = 0.018;
+  const raw: Omit<Bar, "row" | "ids" | "ns" | "titles">[] = [];
+  sch.items.forEach((s, i) => {
+    const n = i + 1;
+    const active = s.activeMinutes / 360;
+    const a0 = scale(s.startMax), a1 = Math.max(scale(s.startMax + active), a0 + minW);
+    const crit = cp.has(s.id);
+    if (s.owner === "agent" || s.owner === "both") raw.push({ id: s.id, n, lane: "agent", x0: a0, x1: a1, title: s.title, critical: crit, kind: "work" });
+    if (s.owner === "you" || s.owner === "both") raw.push({ id: s.id, n, lane: "you", x0: a0, x1: a1, title: s.title, critical: crit, kind: "work" });
+    if (s.waitDays[1] > 0) {
+      const w0 = scale(s.startMax + active);
+      const wMin = Math.max(scale(s.startMax + active + s.waitDays[0]), w0 + minW);
+      const wMax = Math.max(scale(s.startMax + active + s.waitDays[1]), wMin);
+      raw.push({ id: s.id, n, lane: "provider", x0: w0, x1: wMin, x2: wMax, title: s.title, critical: crit, kind: "wait" });
+    }
+  });
+  // Merge work that starts at the same moment in the same lane ("do 1, 2, 3 today") into one cluster bar.
+  const merged: Omit<Bar, "row">[] = [];
+  for (const b of raw.sort((a, b) => a.x0 - b.x0 || a.n - b.n)) {
+    const prev = merged.find((m) => m.kind === "work" && b.kind === "work" && m.lane === b.lane && m.critical === b.critical && Math.abs(m.x0 - b.x0) < 0.012);
+    if (prev) {
+      prev.ids.push(b.id); prev.ns.push(b.n); prev.titles.push(b.title);
+      prev.x1 = Math.max(prev.x1, b.x1);
+    } else merged.push({ ...b, ids: [b.id], ns: [b.n], titles: [b.title] });
+  }
+  const rows: Record<Lane, number> = { agent: 0, you: 0, provider: 0 };
+  const ends: Record<Lane, number[]> = { agent: [], you: [], provider: [] };
+  const bars: Bar[] = merged
+    .map((b) => {
+      const e = ends[b.lane];
+      // reserve room for the printed step numbers so labels never collide on narrow screens
+      const right = Math.max(b.x2 ?? b.x1, b.x0 + 0.02 + 0.035 * b.ns.length);
+      let row = e.findIndex((end) => end <= b.x0 + 0.002);
+      if (row < 0) { row = e.length; e.push(right); } else e[row] = right;
+      rows[b.lane] = Math.max(rows[b.lane], row + 1);
+      return { ...b, row };
+    });
+  return { bars, rows, maxDays, scale };
+}
+
+/** Waits that can start today (no unfinished prerequisites that take more than a day). */
+export function startToday(steps: Step[]): Step[] {
+  return startTheClock(steps).filter((s) => s.startsToday);
+}
