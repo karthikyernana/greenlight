@@ -2,10 +2,11 @@
    Scout → (Scope classifier ‖ Gate finder ‖ Prober) → Verifier (code quote check → LLM critic → ≤2 targeted re-check rounds) → graph.
    The rules engine turns the graph into a plan exactly as it does for hand-researched providers. */
 import { z } from "zod";
-import { ProviderGraph, type Fact, type FactStatus, type ReviewTier } from "../graph/schema";
+import { ProviderGraph, TIER_RANK, type Fact, type FactStatus, type ReviewTier } from "../graph/schema";
 import { llmJson, providers as allProviders, RunBudget, BudgetErr } from "../llm";
 import { probeAuthorize, probeComposio, probeDiscovery } from "../probe";
-import { docCandidates, fetchPage, host, rankPassages, webSearch, type Page, type Passage } from "../retrieval";
+import { docCandidates, firecrawlConfigured, host, makeRetriever, rankPassages, type Page, type Passage } from "../retrieval";
+import { jevConfigured, jevSupport, jevTiers, type Decision } from "../jev";
 import { checkQuote } from "../quote";
 import { slugify } from "../urlstate";
 import { ScoutOut, ScopesOut, GatesOut, CriticOut, RecheckOut } from "./schemas";
@@ -30,7 +31,7 @@ export type PipeEvent =
   | { type: "trace"; trace: Trace }
   | { type: "error"; code: "no_model" | "model_down" | "invalid" | "budget"; message: string };
 
-export type RunOpts = { need?: string; providers?: ReturnType<typeof allProviders>; budget?: number; deadlineMs?: number; composioSlug?: string; maxRecheckRounds?: number; fetchImpl?: (url: string) => Promise<Page> };
+export type RunOpts = { need?: string; providers?: ReturnType<typeof allProviders>; budget?: number; deadlineMs?: number; composioSlug?: string; maxRecheckRounds?: number; fetchImpl?: (url: string) => Promise<Page>; jevFetch?: typeof fetch };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -91,7 +92,9 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     id: newTraceId(), q, app: input.name, startedAt: new Date().toISOString(), ms: 0, stages: [], tools: [], llm: budget.calls,
     tokens: { prompt: 0, completion: 0, budget: budget.limit }, models: [], outcome: "failed",
     verifier: { checked: 0, quoteMatched: 0, downgraded: 0, corrected: 0, recheckRounds: 0, criticIssues: 0 },
+    decisions: [],
   };
+  const decide = (d: Decision) => trace.decisions!.push(d);
   const tool = (t: ToolCall) => trace.tools.push(t);
   const stageStart: Record<string, number> = {};
   const stage = (id: StageId, status: "running" | "done" | "warn" | "skipped", detail?: string): PipeEvent => {
@@ -110,16 +113,19 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     trace.tokens.prompt = budget.calls.reduce((a, c) => a + c.prompt, 0);
     trace.tokens.completion = budget.calls.reduce((a, c) => a + c.completion, 0);
     trace.models = [...new Set(budget.calls.filter((c) => c.ok).map((c) => `${c.provider}:${c.model}`))];
+    trace.retrieval = { firecrawl: firecrawlConfigured(), firecrawlPages: ret.state.firecrawlUsed, jina: ret.state.jinaOff ? (ret.state.jinaNote ? `off (${ret.state.jinaNote})` : "off") : "on" };
     saveTrace(trace);
     return { type: "trace", trace };
   };
 
   const corpus = new Map<string, Page>();
-  const fetchP = opts.fetchImpl || ((u: string) => fetchPage(u));
-  const getPage = async (url: string, st: string) => {
+  const ret = makeRetriever();
+  const fetchP = opts.fetchImpl ? (u: string) => opts.fetchImpl!(u) : (u: string, kind: "pick" | "guess") => ret.get(u, kind);
+  const getPage = async (url: string, st: string, kind: "pick" | "guess" = "pick") => {
     if (corpus.has(url)) return corpus.get(url)!;
-    const p = await fetchP(url);
-    tool({ stage: st, kind: "fetch", target: url, ms: p.ms, ok: p.status === 200 && p.text.length > 200, note: p.status === 200 ? `${p.text.length} chars` : `HTTP ${p.status || "error"}` });
+    const p = await fetchP(url, kind);
+    const fell = p.tried && p.tried.length > 1 ? ` (tried ${p.tried.slice(0, -1).join(", ")})` : "";
+    tool({ stage: st, kind: "fetch", target: url, ms: p.ms, ok: p.status === 200 && p.text.length > 200, via: p.via, note: (p.status === 200 ? `${p.text.length} chars` : `HTTP ${p.status || "error"}`) + fell });
     corpus.set(url, p);
     if (p.url && p.url !== url) corpus.set(p.url, p);
     return p;
@@ -143,7 +149,7 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     ? llmJson({ stage: "scout", system: SCOUT_SYS, user: `App: ${q}${input.domain ? `\nWebsite: ${input.domain}` : ""}\nToday: ${today()}`, schema: ScoutOut, budget, providers: ps, timeoutMs: 90_000 }).catch((e) => e as Error)
     : Promise.resolve(null);
   const t1 = Date.now();
-  const s1 = await webSearch(`${scout.name} OAuth app scopes review verification developer documentation`);
+  const s1 = await ret.search(`${scout.name} OAuth app scopes review verification developer documentation`);
   tool({ stage: "scout", kind: "search", target: s1.engine, ms: Date.now() - t1, ok: s1.hits.length > 0, note: s1.error || `${s1.hits.length} results` });
   const nameKey = slugify(scout.name).replace(/-/g, "");
   const THIRD = /stackoverflow|medium\.com|reddit|youtube|wikipedia|quora|dev\.to|linkedin\.com\/pulse|nango|merge\.dev|apideck|pipedream|zapier|rollout|unified\.to/i;
@@ -158,8 +164,11 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
   }
   let bare = scout.domain.split(".").slice(-2).join(".");
   const official = (u: string) => host(u).endsWith(bare) || devHits.includes(u);
-  const readAll = (us: string[]) => Promise.all(us.map((u) => getPage(u, "scout")));
-  const firstUrls = [...new Set([...devHits.slice(0, 5), ...s1.hits.map((h) => h.url).filter((u) => host(u).endsWith(bare) && /dev|doc|api|oauth|auth|app/i.test(u)), ...docCandidates(scout.domain)])].slice(0, 9);
+  const guesses = new Set<string>();
+  const readAll = (us: string[]) => Promise.all(us.map((u) => getPage(u, "scout", guesses.has(u) ? "guess" : "pick")));
+  const picked = [...new Set([...devHits.slice(0, 5), ...s1.hits.map((h) => h.url).filter((u) => host(u).endsWith(bare) && /dev|doc|api|oauth|auth|app/i.test(u))])];
+  for (const u of docCandidates(scout.domain)) if (!picked.includes(u)) guesses.add(u);
+  const firstUrls = [...new Set([...picked, ...guesses])].slice(0, 9);
   await readAll(firstUrls);
   const goodCount = () => [...new Set(corpus.values())].filter((p) => p.status === 200 && p.text.length > 300 && /oauth|scope/i.test(p.text)).length;
   const sr = await scoutP;
@@ -168,11 +177,12 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     const dom = (input.domain || sr.data.domain || scout.domain).replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "").toLowerCase();
     if (dom !== scout.domain) { scout.domain = dom; bare = dom.split(".").slice(-2).join("."); }
     scout = { ...sr.data, name: sr.data.name || input.name, domain: scout.domain };
+    if (goodCount() < 2) for (const u of docCandidates(dom)) if (!sr.data.docUrls.includes(u)) guesses.add(u);
     await readAll([...new Set([...sr.data.docUrls.filter((u) => /^https?:\/\//.test(u)), ...(goodCount() < 2 ? docCandidates(dom) : [])])].filter((u) => !corpus.has(u)).slice(0, 8));
   }
   const urls: string[] = [];
   const comp = await compP;
-  if (comp.slug) urls.push(`https://docs.composio.dev/toolkits/${comp.slug}`);
+  if (comp.slug) { urls.push(`https://docs.composio.dev/toolkits/${comp.slug}`); guesses.add(urls[0]); }
   await readAll(urls);
   const good = [...new Set(corpus.values())].filter((p) => p.status === 200 && p.text.length > 300);
   const composioFact = comp.slug
@@ -230,10 +240,43 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     return;
   }
 
+  // (a) Optional Jev tier decision per scope: a typed Choice over the same passages. Adopted only when confident;
+  // a disagreement with the LLM sends the capability's fact to the re-check. Otherwise the LLM's tier stands.
+  const tierDisputed = new Set<string>();
+  const jevTierNote = new Map<string, string>();
+  if (jevConfigured()) {
+    const items = scopes.capabilities.flatMap((c) => (c.scopes.length ? c.scopes : [{ name: c.label, tier: c.tier }]).map((sc, k) => ({ key: `${c.id}#${k}`, scope: sc.name, capability: c.label })));
+    const tj = Date.now();
+    try {
+      const res = await jevTiers(scout.name, passages.map((p) => p.text).join("\n\n"), items, { fetchImpl: opts.jevFetch });
+      tool({ stage: "scopes", kind: "jev", target: `${items.length} tier choices`, ms: Date.now() - tj, ok: true });
+      for (const c of scopes.capabilities) {
+        const mine = res.filter((r) => r.key.startsWith(`${c.id}#`));
+        mine.forEach((r, k) => {
+          const sc = c.scopes[k];
+          const llmTier = sc ? sc.tier : c.tier;
+          if (r.settled) {
+            if (sc) sc.tier = r.tier as ReviewTier;
+            decide({ stage: "scopes", target: sc?.name || c.label, engine: "jev", value: r.tier, p: r.confidence, note: r.tier !== llmTier ? `LLM said ${llmTier}` : undefined });
+            if (r.tier !== llmTier) tierDisputed.add(c.id);
+          } else decide({ stage: "scopes", target: sc?.name || c.label, engine: "llm", value: llmTier, note: `Jev unsettled (${r.tier} ${r.confidence.toFixed(2)})` });
+        });
+        const settled = mine.filter((r) => r.settled);
+        if (c.scopes.length) c.tier = c.scopes.reduce((w, x) => (TIER_RANK[x.tier as ReviewTier] > TIER_RANK[w] ? (x.tier as ReviewTier) : w), "none" as ReviewTier);
+        else if (settled[0]) c.tier = settled[0].tier as ReviewTier;
+        if (settled.length) jevTierNote.set(c.id, `Tier decided by Jev ${Math.min(...settled.map((r) => r.confidence)).toFixed(2)}`);
+      }
+    } catch (e: any) {
+      tool({ stage: "scopes", kind: "jev", target: "tier choices", ms: Date.now() - tj, ok: false, note: `${String(e?.message || e).slice(0, 100)} → LLM tiers kept` });
+      for (const c of scopes.capabilities) decide({ stage: "scopes", target: c.label, engine: "llm", value: c.tier, note: "Jev failed" });
+    }
+  } else for (const c of scopes.capabilities) decide({ stage: "scopes", target: c.label, engine: "llm", value: c.tier });
+
   // facts from the specialists (status "claimed" until the verifier has looked)
   const capFact = new Map<string, string>();
   for (const c of scopes.capabilities) {
     const f = addFact(c.evidence.claim || `${c.label}: ${c.tier} (${c.why})`, c.evidence.url, c.evidence.quote, "sourced");
+    if (jevTierNote.has(c.id)) f.note = jevTierNote.get(c.id) + (tierDisputed.has(c.id) ? " (disagreed with the LLM; re-checked)" : "");
     capFact.set(c.id, f.id);
     yield { type: "fact", stage: "scopes", id: f.id, claim: f.claim, status: "sourced", url: f.url };
   }
@@ -266,8 +309,9 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     return c.found ? { ok: true, reason: "" } : { ok: false, reason: "quote not found in source" };
   };
   const weak = new Set<string>();
+  for (const id of tierDisputed) { const fid = capFact.get(id); if (fid) weak.add(fid); }
   for (const f of facts) {
-    if (f.status === "tested") continue;
+    if (f.status === "tested" || f.id.startsWith("probe")) continue;
     trace.verifier.checked++;
     const v = await verifyOne(f);
     if (v.ok) { trace.verifier.quoteMatched++; continue; }
@@ -278,6 +322,33 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     trace.verifier.downgraded++;
     weak.add(f.id);
     yield { type: "correction", id: f.id, claim: f.claim, from, to: "uncertain", reason: v.reason };
+  }
+
+  // (b) Optional Jev support check: the code quote check stays first and authoritative; for quotes that DID match,
+  // a Noul asks whether the quote actually supports the claim. < 0.3 → Uncertain; 0.3–0.7 → re-check; ≥ 0.7 → stands.
+  const matched = facts.filter((f) => f.status === "sourced" && f.quote && !f.id.startsWith("probe") && f.id !== "composio-managed");
+  if (jevConfigured() && matched.length) {
+    const tj = Date.now();
+    try {
+      const res = await jevSupport(matched.map((f) => ({ id: f.id, claim: f.claim, quote: f.quote })), { fetchImpl: opts.jevFetch });
+      tool({ stage: "verify", kind: "jev", target: `${res.length} support checks`, ms: Date.now() - tj, ok: true });
+      trace.verifier.jevChecked = res.length;
+      trace.verifier.jevRejected = 0;
+      for (const r of res) {
+        const f = facts.find((x) => x.id === r.id)!;
+        decide({ stage: "verify", target: `${f.id} ${f.claim.slice(0, 70)}`, engine: "jev", value: r.verdict === "supports" ? "supports" : r.verdict === "no" ? "does not support" : "unsettled", p: r.p });
+        if (r.verdict === "supports") { f.note = [f.note, `Quote supports claim: Jev ${r.p.toFixed(2)}`].filter(Boolean).join(" · "); continue; }
+        if (r.verdict === "unsettled") { weak.add(f.id); continue; }
+        f.status = "uncertain";
+        f.note = `Downgraded: quote found but does not support the claim (Jev ${r.p.toFixed(2)})`;
+        trace.verifier.downgraded++;
+        trace.verifier.jevRejected++;
+        weak.add(f.id);
+        yield { type: "correction", id: f.id, claim: f.claim, from: "sourced", to: "uncertain", reason: `quote does not support claim (Jev ${r.p.toFixed(2)})` };
+      }
+    } catch (e: any) {
+      tool({ stage: "verify", kind: "jev", target: "support checks", ms: Date.now() - tj, ok: false, note: `${String(e?.message || e).slice(0, 100)} → code check only` });
+    }
   }
 
   // one LLM critic pass for contradictions
@@ -306,7 +377,7 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
       if (!f) return;
       const query = criticIssues.find((i) => i.factId === id)?.query || `${scout.name} ${f.claim}`.slice(0, 120);
       const ts = Date.now();
-      const s = await webSearch(query, 4);
+      const s = await ret.search(query, 4);
       tool({ stage: "verify", kind: "search", target: query, ms: Date.now() - ts, ok: s.hits.length > 0, note: s.error || s.engine });
       const pool = [...new Set([f.url, ...s.hits.map((h) => h.url).filter(official).slice(0, 2)].filter((u) => u && /^https?:\/\//.test(u)))];
       const pages = await Promise.all(pool.map((u) => getPage(u, "verify")));

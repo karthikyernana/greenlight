@@ -10,12 +10,12 @@
   "gateRecall": 0.1,
   "gateRecallLoose": 0.1,
   "waitRangeOverlap": 0.4,
-  "citationValidity": 0.11904761904761904,
-  "downgraded": 10,
+  "citationValidity": 0.16666666666666666,
+  "downgraded": 7,
   "corrected": 0,
   "faultsCaught": "7/7",
-  "medianLatencyMs": 4666,
-  "totalTokens": 28687
+  "medianLatencyMs": 2784,
+  "totalTokens": 27045
  },
  "rows": [
   {
@@ -30,17 +30,21 @@
    "goldWait": "Same day",
    "predWait": "Same day",
    "citationValidity": 0,
-   "factsChecked": 2,
-   "downgraded": 2,
+   "factsChecked": 1,
+   "downgraded": 1,
    "corrected": 0,
-   "corrections": 2,
+   "corrections": 1,
    "faultCaught": true,
-   "latencyMs": 5315,
-   "tokens": 3738,
+   "retrievers": {
+    "fetch": 7
+   },
+   "jevDecisions": 0,
+   "latencyMs": 6653,
+   "tokens": 3316,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthh3a8f82v"
+   "traceId": "mvxu43i31va1g"
   },
   {
    "slug": "notion",
@@ -53,18 +57,22 @@
    "waitOverlap": 1,
    "goldWait": "Same day",
    "predWait": "Same day",
-   "citationValidity": 0.5,
-   "factsChecked": 4,
-   "downgraded": 2,
+   "citationValidity": 0.6666666666666666,
+   "factsChecked": 3,
+   "downgraded": 1,
    "corrected": 0,
-   "corrections": 2,
+   "corrections": 1,
    "faultCaught": true,
-   "latencyMs": 1687,
-   "tokens": 6051,
+   "retrievers": {
+    "fetch": 4
+   },
+   "jevDecisions": 0,
+   "latencyMs": 2274,
+   "tokens": 5628,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthh3al4gg7"
+   "traceId": "mvxu43i46ixsg"
   },
   {
    "slug": "slack",
@@ -83,12 +91,16 @@
    "corrected": 0,
    "corrections": 1,
    "faultCaught": true,
-   "latencyMs": 3051,
-   "tokens": 2108,
+   "retrievers": {
+    "fetch": 4
+   },
+   "jevDecisions": 0,
+   "latencyMs": 2784,
+   "tokens": 3024,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthh3acpope"
+   "traceId": "mvxu43i4cts33"
   },
   {
    "slug": "hubspot",
@@ -107,12 +119,16 @@
    "corrected": 0,
    "corrections": 1,
    "faultCaught": true,
-   "latencyMs": 4666,
+   "retrievers": {
+    "fetch": 5
+   },
+   "jevDecisions": 0,
+   "latencyMs": 4702,
    "tokens": 4218,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthiee4xjni"
+   "traceId": "mvxu459nxsfds"
   },
   {
    "slug": "outlook",
@@ -132,12 +148,14 @@
    "corrected": 0,
    "corrections": 0,
    "faultCaught": false,
-   "latencyMs": 14149,
+   "retrievers": {},
+   "jevDecisions": 0,
+   "latencyMs": 14330,
    "tokens": 157,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthjgdyyutt"
+   "traceId": "mvxu45nqrhf7c"
   },
   {
    "slug": "gmail",
@@ -157,12 +175,16 @@
    "corrected": 0,
    "corrections": 0,
    "faultCaught": false,
-   "latencyMs": 5993,
+   "retrievers": {
+    "fetch": 6
+   },
+   "jevDecisions": 0,
+   "latencyMs": 2478,
    "tokens": 151,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthl71xg71n"
+   "traceId": "mvxu48n07ymgz"
   },
   {
    "slug": "salesforce",
@@ -181,12 +203,16 @@
    "corrected": 0,
    "corrections": 1,
    "faultCaught": true,
-   "latencyMs": 4794,
-   "tokens": 4122,
+   "retrievers": {
+    "fetch": 3
+   },
+   "jevDecisions": 0,
+   "latencyMs": 3756,
+   "tokens": 3751,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthm086a6eg"
+   "traceId": "mvxu48wi5ihba"
   },
   {
    "slug": "instagram",
@@ -205,12 +231,16 @@
    "corrected": 0,
    "corrections": 1,
    "faultCaught": true,
-   "latencyMs": 2513,
-   "tokens": 2278,
+   "retrievers": {
+    "fetch": 5
+   },
+   "jevDecisions": 0,
+   "latencyMs": 2543,
+   "tokens": 2280,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthppq2txk5"
+   "traceId": "mvxu4akk3wbwx"
   },
   {
    "slug": "linkedin",
@@ -223,18 +253,22 @@
    "waitOverlap": 0,
    "goldWait": "≤2d",
    "predWait": "Same day",
-   "citationValidity": 0.3333333333333333,
-   "factsChecked": 3,
-   "downgraded": 2,
+   "citationValidity": 0.5,
+   "factsChecked": 2,
+   "downgraded": 1,
    "corrected": 0,
-   "corrections": 2,
+   "corrections": 1,
    "faultCaught": true,
-   "latencyMs": 2163,
-   "tokens": 5708,
+   "retrievers": {
+    "fetch": 6
+   },
+   "jevDecisions": 0,
+   "latencyMs": 1828,
+   "tokens": 4364,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthptm753de"
+   "traceId": "mvxu4btbhdxdz"
   },
   {
    "slug": "twitter",
@@ -254,12 +288,14 @@
    "corrected": 0,
    "corrections": 0,
    "faultCaught": false,
-   "latencyMs": 618,
+   "retrievers": {},
+   "jevDecisions": 0,
+   "latencyMs": 633,
    "tokens": 156,
    "models": [
     "mock:heuristic-v1"
    ],
-   "traceId": "mvxthrhszritd"
+   "traceId": "mvxu4cjkfn06k"
   }
  ]
 }

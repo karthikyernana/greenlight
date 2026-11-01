@@ -17,7 +17,9 @@
 - Accounts, saved projects, a database: share URLs carry the whole state. Not needed to prove the idea.
 - Automating console steps with a browser agent: signing into users' provider accounts is a trust problem worth its own design.
 - Chat. A plan the user can change by tapping is faster to read and to trust than a conversation.
-- Search APIs with keys: retrieval is our own and works without one, at the cost of weaker search from datacenter IPs (documented).
+- Search APIs with keys as a requirement: retrieval works without one. Firecrawl (JS-rendered scrape + search) is used only when `FIRECRAWL_API_KEY` is set, capped at a few pages per run; Jina Reader is the free fallback; plain fetch is always last (docs/RETRIEVAL.md).
+
+**Jev only for typed decisions.** TypeSafe's Jev returns typed answers (a choice with probabilities, a yes/no probability), no text, in well under a second. We use it only where our code consumes a decision: a scope's review tier (Choice), "does this verbatim quote support this claim?" (Noul), and "does this need sentence ask for capability X?" (Noul). Text generation (gates, steps, summaries) stays with the LLM, and the code quote check stays first and authoritative. Every Jev call is behind `TYPESAFE_API_KEY`, falls back to the LLM/rules path when unset or failing, and is shown in the trace as "Jev 0.93" so a person can see which engine decided.
 
 **How it scales to 100.** Composio already lists 100+ OAuth toolkits (`data/composio-toolkits.json`). Run the pipeline in batch, keep graphs whose verifier pass rate is high, have a person review the Uncertain facts (the evidence panel is the review queue), commit the JSON. The harness guards against regressions on every model or prompt change. Re-running `build-graph.ts` weekly re-checks every curated quote and flags pages that changed.
 

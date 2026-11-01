@@ -2,11 +2,11 @@ import type { Probe } from "./types";
 
 const UA = "GreenlightProbe/1.0 (+https://github.com/karthikyernana/greenlight; public unauthenticated checks only)";
 
-export async function fetchText(url: string, ms = 6000, init: RequestInit = {}): Promise<{ status: number; text: string; finalUrl: string; ctype: string } | null> {
+export async function fetchText(url: string, ms = 6000, init: RequestInit = {}, f: typeof fetch = fetch): Promise<{ status: number; text: string; finalUrl: string; ctype: string } | null> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(url, { redirect: "follow", ...init, signal: ctl.signal, headers: { "user-agent": UA, accept: "text/html,application/json;q=0.9,*/*;q=0.8", ...(init.headers || {}) } });
+    const r = await f(url, { redirect: "follow", ...init, signal: ctl.signal, headers: { "user-agent": UA, accept: "text/html,application/json;q=0.9,*/*;q=0.8", ...(init.headers || {}) } });
     const text = (await r.text()).slice(0, 400_000);
     return { status: r.status, text, finalUrl: r.url || url, ctype: r.headers.get("content-type") || "" };
   } catch {

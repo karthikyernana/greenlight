@@ -34,8 +34,11 @@ npm run eval -- --mock --faults   # harness with the heuristic mock model, no ke
 | `LLM_TOKEN_BUDGET` | per-investigation token cap (default 120000) |
 | `LLM_MAX_TOKENS` | max output tokens per call (default 2500) |
 | `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY` | optional fallbacks, tried in that order |
+| `TYPESAFE_API_KEY` | optional: Jev typed decisions (scope tier, quote-supports-claim, need → capabilities). Unset = LLM/rules path. `TYPESAFE_MODEL` (default `jev-latest`), `JEV_TIMEOUT_MS` (6000), `JEV_DISABLE=1` |
+| `FIRECRAWL_API_KEY` | optional: JS-rendered scrape + search for the Scout's picked pages. `FIRECRAWL_MAX_PAGES` per run (default 6) |
+| `JINA_API_KEY`, `RETRIEVAL_JINA` | optional key for Jina Reader (free fallback, anonymous by default); `RETRIEVAL_JINA=0` turns it off |
 
-`/api/status` reports which provider is primary (never the key). Ready guides, the engine and the probes need no key.
+`/api/status` reports which provider is primary, whether Jev and Firecrawl are configured (yes/no), never a key. Ready guides, the engine and the probes need no key.
 
 ## Decisions
 - Code decides, models assist. The plan is computed; models only propose facts, and a fact without a matching quote is downgraded.

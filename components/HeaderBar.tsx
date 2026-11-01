@@ -4,9 +4,10 @@ import { usePathname, useRouter } from "next/navigation";
 import type { IndexEntry } from "@/lib/types";
 import { exact, hrefFor, match } from "@/lib/search";
 import { parseIntent, intentHref, type IntentIndex } from "@/lib/intent";
+import { hrefForIntent } from "@/lib/intentClient";
 
 /** Compact command bar in the header on guide pages. On the home page the board owns the command bar. */
-export default function HeaderBar({ index, intents }: { index: IndexEntry[]; intents: IntentIndex[] }) {
+export default function HeaderBar({ index, intents, jev = false }: { index: IndexEntry[]; intents: IntentIndex[]; jev?: boolean }) {
   const path = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -59,7 +60,7 @@ export default function HeaderBar({ index, intents }: { index: IndexEntry[]; int
             if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(rows.length - 1, h + 1)); }
             if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); }
             if (e.key === "Escape") { setQ(""); ref.current?.blur(); }
-            if (e.key === "Enter" && rows[hi]) go(rows[hi].href);
+            if (e.key === "Enter" && rows[hi]) { if (intent && hi === 0) hrefForIntent(q, intent, jev).then(go); else go(rows[hi].href); }
           }}
           placeholder="An app, or what your agent does"
           aria-label="Find an app or investigate a new one"

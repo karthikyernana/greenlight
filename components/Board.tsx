@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { IndexEntry } from "@/lib/types";
 import { exact, hrefFor, match } from "@/lib/search";
-import { parseIntent, intentHref, type IntentIndex } from "@/lib/intent";
+import { parseIntent, type IntentIndex } from "@/lib/intent";
+import { hrefForIntent } from "@/lib/intentClient";
 
 type Sort = "wait" | "name";
 
 /** Landing = one command bar + the departure board. Typing filters live; Enter opens or investigates. */
-export default function Board({ index, intents }: { index: IndexEntry[]; intents: IntentIndex[] }) {
+export default function Board({ index, intents, jev = false }: { index: IndexEntry[]; intents: IntentIndex[]; jev?: boolean }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("wait");
@@ -51,7 +52,7 @@ export default function Board({ index, intents }: { index: IndexEntry[]; intents
     if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); }
     if (e.key === "Escape") setQ("");
     if (e.key === "Enter") {
-      if (intent) { router.push(intentHref(intent)); return; }
+      if (intent) { hrefForIntent(q, intent, jev).then((h) => router.push(h)); return; }
       const href = target(rows.length ? hi : 0);
       if (href) router.push(href);
     }

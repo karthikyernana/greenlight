@@ -98,6 +98,8 @@ async function main() {
     rows.push({
       slug, name, ok: !!pred, error: err?.slice(0, 160), ...s,
       citationValidity: v && v.checked ? v.quoteMatched / v.checked : null, factsChecked: v?.checked ?? 0, downgraded: v?.downgraded ?? 0, corrected: v?.corrected ?? 0, corrections, faultCaught,
+      retrievers: Object.fromEntries(Object.entries((trace?.tools || []).filter((t) => t.kind === "fetch" && t.ok).reduce((m: Record<string, number>, t) => { const k = t.via || "fetch"; m[k] = (m[k] || 0) + 1; return m; }, {}))),
+      jevDecisions: (trace?.decisions || []).filter((d) => d.engine === "jev").length,
       latencyMs: trace?.ms ?? Date.now() - t0, tokens: trace ? trace.tokens.prompt + trace.tokens.completion : 0, models: trace?.models || [], traceId: trace?.id,
     });
     const r = rows.find((x) => x.slug === slug)!;

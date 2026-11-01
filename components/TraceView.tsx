@@ -38,9 +38,18 @@ export default function TraceView({ id }: { id: string }) {
       <section className="mt-8">
         <p className="label mb-2">Tool calls</p>
         <ul className="space-y-1">
-          {t.tools.map((x, i) => <li key={i} className="mono grid grid-cols-[64px_56px_1fr] gap-2 text-[12px]"><span className="text-ink-3">{x.stage}</span><span className={x.ok ? "" : "text-amber"}>{x.kind}</span><span className="min-w-0 break-all">{x.target}{x.note ? <span className="text-ink-3"> · {x.note}</span> : null}</span></li>)}
+          {t.tools.map((x, i) => <li key={i} className="mono grid grid-cols-[64px_56px_1fr] gap-2 text-[12px]"><span className="text-ink-3">{x.stage}</span><span className={x.ok ? "" : "text-amber"}>{x.kind}</span><span className="min-w-0 break-all">{x.target}{x.via ? <span> · via {x.via}</span> : null}{x.note ? <span className="text-ink-3"> · {x.note}</span> : null}</span></li>)}
         </ul>
       </section>
+      {t.decisions?.length ? (
+        <section className="mt-8">
+          <p className="label mb-2">Decisions · who decided</p>
+          <table className="w-full text-left text-[12.5px]">
+            <thead><tr className="label border-b border-ink"><th className="py-1.5 font-normal">Stage</th><th className="font-normal">Subject</th><th className="font-normal">Answer</th><th className="font-normal">Decided by</th></tr></thead>
+            <tbody>{t.decisions.map((d, i) => <tr key={i} className="mono border-b rule"><td className="py-1.5">{d.stage}</td><td className="break-all">{d.target}</td><td>{d.value}</td><td className={d.engine === "jev" ? "" : "text-ink-3"}>{d.engine === "jev" ? `Jev ${d.p?.toFixed(2)}` : d.engine === "llm" ? "LLM" : d.engine}{d.note ? ` · ${d.note}` : ""}</td></tr>)}</tbody>
+          </table>
+        </section>
+      ) : null}
     </main>
   );
 }

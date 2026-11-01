@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { jevConfigured } from "@/lib/jev";
 import { Host_Grotesk, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
 import { libraryIndex, intentIndex } from "@/lib/library";
@@ -27,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Lamp />
               <span className="text-[15px] font-semibold tracking-[-0.01em]">Greenlight</span>
             </Link>
-            <HeaderBar index={index} intents={intentIndex()} />
+            <HeaderBar index={index} intents={intentIndex()} jev={jevConfigured()} />
             <nav className="ml-auto flex shrink-0 items-center gap-4 text-[13px] text-ink-2">
               <span className="label hidden md:inline num">{index.length} apps</span>
               <a href="https://github.com/karthikyernana/greenlight/tree/v3#readme" className="hover:text-ink" target="_blank" rel="noreferrer">README</a>
