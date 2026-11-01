@@ -1,0 +1,369 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "github",
+ "name": "GitHub",
+ "domain": "github.com",
+ "category": "Developer tools",
+ "console": "https://github.com/settings/developers",
+ "appType": "GitHub App (recommended) or OAuth app",
+ "summary": "The easiest provider on the list: register an app in two minutes, no review for any scope. The only real decision is OAuth app vs GitHub App.",
+ "composio": {
+  "managed": "available",
+  "slug": "github",
+  "note": "Composio's managed GitHub OAuth app works today, so you can ship without registering anything. Register your own when you want your name on the consent screen or your own rate-limit pool.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "identity",
+   "label": "Sign in / read profile",
+   "keywords": [
+    "sign in",
+    "login",
+    "profile"
+   ],
+   "scopes": [
+    {
+     "name": "read:user",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "user:email",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Any registered app can request it, no review",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-identity"
+   ]
+  },
+  {
+   "id": "repos",
+   "label": "Read & write repos, issues, PRs",
+   "keywords": [
+    "repo",
+    "issue",
+    "pull request",
+    "pr",
+    "code",
+    "commit",
+    "review"
+   ],
+   "scopes": [
+    {
+     "name": "repo",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "No review. Org owners may have to approve the app before it can see org repos",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-repos"
+   ]
+  },
+  {
+   "id": "org",
+   "label": "Act inside orgs with restrictions",
+   "keywords": [
+    "org",
+    "organization",
+    "organisation",
+    "company"
+   ],
+   "scopes": [
+    {
+     "name": "read:org",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Each org's owner has to approve your app (OAuth app access restrictions)",
+   "default": false,
+   "gates": [
+    "org"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-org"
+   ]
+  },
+  {
+   "id": "marketplace",
+   "label": "Listed or paid on GitHub Marketplace",
+   "keywords": [
+    "marketplace",
+    "listed",
+    "sell"
+   ],
+   "scopes": [],
+   "tier": "sensitive",
+   "why": "Listing goes through GitHub review. Paid plans need an organization-owned app",
+   "default": false,
+   "gates": [
+    "mkt"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-marketplace"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "org",
+   "kind": "admin_approval",
+   "label": "Org owner approval",
+   "plain": "Orgs that restrict apps need an owner to approve yours.",
+   "steps": [
+    "org-approve"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  },
+  {
+   "id": "mkt",
+   "kind": "marketplace_listing",
+   "label": "Marketplace listing review",
+   "plain": "Optional: only to be listed or to sell.",
+   "steps": [
+    "mkt"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "choose",
+   "title": "Choose a GitHub App or an OAuth app",
+   "detail": "GitHub recommends GitHub Apps: fine-grained permissions, short-lived tokens, and they can act without a user. Use an OAuth app only when you need the classic `repo` scope model.",
+   "owner": "agent",
+   "agent": "Recommend a type from what your agent needs to do",
+   "human": "Approve the choice",
+   "effortMin": 5,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": [
+    "gh-prefer"
+   ]
+  },
+  {
+   "id": "register",
+   "title": "Register the app",
+   "detail": "Settings → Developer settings → New GitHub App / OAuth App. Fill in name, homepage URL and callback URL (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback).",
+   "owner": "both",
+   "agent": "Fill in the form and callback URLs; generate the manifest",
+   "human": "Click create while signed in and copy the client secret into your vault",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://github.com/settings/developers",
+   "facts": []
+  },
+  {
+   "id": "org-approve",
+   "title": "Get org owners to approve the app",
+   "detail": "Orgs with OAuth app access restrictions block your app until an owner approves it. With a GitHub App, an org admin installs it on that org.",
+   "owner": "you",
+   "agent": "Draft the approval request message for org admins",
+   "human": "Send it; the org owner clicks approve",
+   "effortMin": 5,
+   "wait": [
+    0,
+    3
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-org-approve"
+   ]
+  },
+  {
+   "id": "mkt",
+   "title": "Submit a Marketplace listing (optional)",
+   "detail": "Only needed to be listed or to sell. Requires a privacy policy, support contact, webhook for plan changes, and more than auth-only value.",
+   "owner": "both",
+   "agent": "Draft listing copy, privacy policy and support page",
+   "human": "Submit; organizations only, for paid plans",
+   "effortMin": 240,
+   "wait": [
+    7,
+    21
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-mkt"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio runs a managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/github",
+   "title": "Composio: GitHub toolkit",
+   "quote": "g Git-based repository management, issue tracking, and continuous integration features Copy page Authentication Details Composio-managed OAuth available OAuth2 Frequently Asked Questions Does Composio support GitHub Apps?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "gh-prefer",
+   "claim": "GitHub prefers GitHub Apps over OAuth apps (fine-grained permissions, short-lived tokens)",
+   "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps",
+   "title": "GitHub Docs: Differences between GitHub Apps and OAuth apps",
+   "quote": "h app OAuth 2.0 and OIDC Discovery documents In this article Differences between GitHub Apps and OAuth apps In general, GitHub Apps are preferred to OAuth apps because they use fine-grained permissions, give more control over which repositories the app can access, and use short-lived tokens.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "cap-identity",
+   "claim": "Sign in / read profile: Any registered app can request it, no review",
+   "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+   "title": "GitHub Docs: Creating an OAuth app",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-repos",
+   "claim": "Read & write repos, issues, PRs: No review. Org owners may have to approve the app before it can see org repos",
+   "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+   "title": "GitHub Docs: Creating an OAuth app",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-org",
+   "claim": "Act inside orgs with restrictions: Each org's owner has to approve your app (OAuth app access restrictions)",
+   "url": "https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/limiting-oauth-app-and-github-app-access-requests-and-installations",
+   "title": "GitHub Docs: Limiting OAuth app and GitHub App access requests",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-marketplace",
+   "claim": "Listed or paid on GitHub Marketplace: Listing goes through GitHub review. Paid plans need an organization-owned app",
+   "url": "https://docs.github.com/en/apps/github-marketplace/creating-apps-for-github-marketplace/requirements-for-listing-an-app",
+   "title": "GitHub Docs: Requirements for listing an app",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-org-approve",
+   "claim": "Get org owners to approve the app: 0–3 days provider-side",
+   "url": "https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/limiting-oauth-app-and-github-app-access-requests-and-installations",
+   "title": "GitHub Docs: Limiting OAuth app and GitHub App access requests",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-mkt",
+   "claim": "Submit a Marketplace listing (optional): 7–21 days provider-side",
+   "url": "https://docs.github.com/en/apps/github-marketplace/creating-apps-for-github-marketplace/requirements-for-listing-an-app",
+   "title": "GitHub Docs: Requirements for listing an app",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Our estimate: the provider doesn't publish this wait"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/github",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "Authorize endpoint (fake client): HTTP 302 → github.com/login — redirects an unknown client to a sign-in/error page",
+   "url": "https://github.com/login/oauth/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 302 → github.com/login — redirects an unknown client to a sign-in/error page",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Use Composio-managed GitHub auth: zero registration, live in minutes.",
+   "Or register a GitHub App now. Nothing needs review to go live."
+  ],
+  "rejections": [
+   "Marketplace: the app only does sign-in, with no integration value beyond auth",
+   "Marketplace: links to privacy policy or support are broken"
+  ],
+  "blockers": [
+   {
+    "problem": "Users in an org can't see org repos",
+    "fix": "The org restricts OAuth apps. Ask an org owner to approve the app under Settings → Third-party access, or switch to a GitHub App and have them install it."
+   },
+   {
+    "problem": "Hitting the 100-app limit",
+    "fix": "A user or org can own up to 100 OAuth apps and 100 GitHub Apps. Reuse one app with several callback URLs per environment."
+   }
+  ],
+  "uncertain": [
+   "Marketplace review time isn't published. The 1–3 week range is our estimate."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/github",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://github.com/login/oauth/authorize",
+   "result": "HTTP 302 → github.com/login — redirects an unknown client to a sign-in/error page",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

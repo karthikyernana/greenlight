@@ -1,27 +1,30 @@
 import type { Metadata } from "next";
-import { getGuide, libraryIndex } from "@/lib/library";
-import GuideView from "@/components/GuideView";
+import { getGraph } from "@/lib/graph/load";
+import { libraryIndex } from "@/lib/library";
+import Guide from "@/components/Guide";
 import LiveGuide from "@/components/LiveGuide";
-import { headline, verdict, defaultSelection } from "@/lib/plan";
-import { parseNeed } from "@/lib/urlstate";
+import { plan, defaultNeed, cleanCaps } from "@/lib/engine";
+import { parseNeed, parseProfile } from "@/lib/urlstate";
 
-type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ need?: string; q?: string; cs?: string }> };
+type SP = { need?: string; q?: string; cs?: string; who?: string; scale?: string; biz?: string };
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<SP> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const g = getGuide(slug);
+  const g = getGraph(slug);
   if (!g) return { title: `${slug} · Greenlight` };
-  const h = headline(g);
-  const v = verdict(g, defaultSelection(g));
-  return { title: `${g.name}: ${h.wait} to OAuth approval · Greenlight`, description: `${v.lead} ${v.pole || ""} ${g.summary}`.trim() };
+  const p = plan(g, defaultNeed(g), { suggestions: false });
+  return { title: `${g.name}: ${p.live ? "live today" : p.wait} to real users · Greenlight`, description: `${p.lead} ${p.pole?.text || ""}`.trim() };
 }
 
 export default async function Page({ params, searchParams }: Props) {
   const { slug } = await params;
-  const { need, q, cs } = await searchParams;
-  const g = getGuide(slug);
-  if (g) return <GuideView guide={g} initialNeed={parseNeed(need)} />;
+  const sp = await searchParams;
+  const caps = parseNeed(sp.need);
+  const profile = parseProfile(sp);
+  const g = getGraph(slug);
+  if (g) return <Guide graph={g} initialNeed={{ caps: cleanCaps(g, caps), profile }} />;
   const entry = libraryIndex().find((i) => i.slug === slug);
-  const name = q?.trim() || entry?.name || slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return <LiveGuide key={slug} slug={slug} name={name} q={q || entry?.name} composioSlug={cs || entry?.composioSlug} need={parseNeed(need)} />;
+  const name = sp.q?.trim() || entry?.name || slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return <LiveGuide key={slug} slug={slug} name={name} q={sp.q || entry?.name} composioSlug={sp.cs || entry?.composioSlug} caps={caps} profile={profile} />;
 }

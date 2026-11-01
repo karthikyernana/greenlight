@@ -48,3 +48,43 @@ export function slugify(s: string) {
     s.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\.(com|io|ai|dev|app|co|org|net)(\/.*)?$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "app"
   );
 }
+
+/* ───────── v3: graph + need + profile in the URL ───────── */
+import type { Need, ProviderGraph } from "./graph/schema";
+import { DEFAULT_PROFILE } from "./graph/schema";
+import { defaultCaps, cleanCaps } from "./engine";
+
+/** /guide/<slug>?need=a,b&who=team&scale=small&biz=no[#g=<compressed graph>] — defaults are omitted so links stay short. */
+export function needHref(g: Pick<ProviderGraph, "slug" | "capabilities"> & Partial<ProviderGraph>, need?: Partial<Need>, opts: { embed?: boolean; origin?: string } = {}) {
+  const base = `${opts.origin || ""}/guide/${encodeURIComponent(g.slug)}`;
+  const def = defaultCaps(g as ProviderGraph);
+  const caps = need?.caps ? cleanCaps(g as ProviderGraph, need.caps) : def;
+  const p = { ...DEFAULT_PROFILE, ...(need?.profile || {}) };
+  const qs = new URLSearchParams();
+  if (!(caps.length === def.length && caps.every((x) => def.includes(x)))) qs.set("need", caps.join(","));
+  if (p.audience !== DEFAULT_PROFILE.audience) qs.set("who", p.audience);
+  if (p.scale !== DEFAULT_PROFILE.scale) qs.set("scale", p.scale);
+  if (p.business !== DEFAULT_PROFILE.business) qs.set("biz", "no");
+  const s = qs.toString().replace(/%2C/g, ",");
+  const hash = opts.embed && g.origin === "generated" ? `#g=${compressToEncodedURIComponent(JSON.stringify(g))}` : "";
+  return base + (s ? `?${s}` : "") + hash;
+}
+
+export function parseProfile(sp: { who?: string; scale?: string; biz?: string }) {
+  return {
+    audience: sp.who === "team" ? "team" : "public",
+    scale: sp.scale === "small" ? "small" : "large",
+    business: sp.biz !== "no",
+  } as Need["profile"];
+}
+
+export function decodeGraphHash(hash: string, parse: (x: unknown) => ProviderGraph | null): ProviderGraph | null {
+  const m = hash.match(/(?:^#|&)g=([^&]+)/);
+  if (!m) return null;
+  try {
+    const raw = decompressFromEncodedURIComponent(m[1]);
+    return raw ? parse(JSON.parse(raw)) : null;
+  } catch {
+    return null;
+  }
+}

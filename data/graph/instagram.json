@@ -1,0 +1,394 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "instagram",
+ "name": "Instagram (Meta)",
+ "domain": "instagram.com",
+ "category": "Social",
+ "console": "https://developers.facebook.com/apps",
+ "appType": "Meta app with Instagram API (Instagram Login)",
+ "summary": "Works for your own accounts on day one (Standard Access). Serving other businesses needs Advanced Access: Business Verification first, then App Review with a screencast for every permission. Only Business and Creator accounts are supported.",
+ "composio": {
+  "managed": "available",
+  "slug": "instagram",
+  "note": "Composio-managed works for basic flows. Composio notes that comment management needs permissions Meta must approve on the app, so some actions need your own app.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "own",
+   "label": "Manage accounts you own",
+   "keywords": [
+    "my own account",
+    "our account",
+    "own account"
+   ],
+   "scopes": [
+    {
+     "name": "instagram_business_basic",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "instagram_business_content_publish",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Standard Access: works for people with a role on the app",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "ig-standard"
+   ]
+  },
+  {
+   "id": "publish",
+   "label": "Publish for customers' accounts",
+   "keywords": [
+    "post",
+    "publish",
+    "schedule",
+    "upload",
+    "content"
+   ],
+   "scopes": [
+    {
+     "name": "instagram_business_basic",
+     "tier": "restricted",
+     "facts": []
+    },
+    {
+     "name": "instagram_business_content_publish",
+     "tier": "restricted",
+     "facts": []
+    }
+   ],
+   "tier": "restricted",
+   "why": "Advanced Access = App Review + Business Verification",
+   "default": true,
+   "gates": [
+    "bizver",
+    "review"
+   ],
+   "steps": [],
+   "facts": [
+    "ig-advanced"
+   ]
+  },
+  {
+   "id": "comments",
+   "label": "Manage comments / DMs",
+   "keywords": [
+    "comment",
+    "dm",
+    "message",
+    "reply",
+    "inbox"
+   ],
+   "scopes": [
+    {
+     "name": "instagram_business_manage_comments",
+     "tier": "restricted",
+     "facts": []
+    },
+    {
+     "name": "instagram_business_manage_messages",
+     "tier": "restricted",
+     "facts": []
+    }
+   ],
+   "tier": "restricted",
+   "why": "Each permission is reviewed with its own screencast",
+   "default": false,
+   "gates": [
+    "bizver",
+    "review"
+   ],
+   "steps": [],
+   "facts": [
+    "ig-advanced"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "bizver",
+   "kind": "business_verification",
+   "label": "Business verification",
+   "plain": "Meta checks your legal business documents.",
+   "steps": [
+    "bizver"
+   ],
+   "skip": [
+    {
+     "when": {
+      "audience": "team"
+     },
+     "reason": "Standard Access covers accounts with a role on your app",
+     "facts": [
+      "ig-standard"
+     ]
+    }
+   ],
+   "needsBusiness": true,
+   "facts": [
+    "ig-advanced"
+   ]
+  },
+  {
+   "id": "review",
+   "kind": "app_review",
+   "label": "Meta App Review",
+   "plain": "Meta reviews a screencast of each permission in use.",
+   "steps": [
+    "privacy",
+    "screencast",
+    "review"
+   ],
+   "skip": [
+    {
+     "when": {
+      "audience": "team"
+     },
+     "reason": "Standard Access covers accounts with a role on your app",
+     "facts": [
+      "ig-standard"
+     ]
+    }
+   ],
+   "needsBusiness": false,
+   "facts": [
+    "ig-advanced"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "id": "app",
+   "title": "Create a Meta app (Business type) and add Instagram",
+   "detail": "developers.facebook.com/apps → Create app → add the Instagram product (Instagram Login). Add redirect URIs (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback).",
+   "owner": "both",
+   "agent": "Configure the product, redirect URIs and webhooks",
+   "human": "Create it with a Meta developer account",
+   "effortMin": 20,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://developers.facebook.com/apps",
+   "facts": []
+  },
+  {
+   "id": "testers",
+   "title": "Add test users and a Business/Creator account",
+   "detail": "Standard Access only works for accounts with a role on the app.",
+   "owner": "you",
+   "agent": "",
+   "human": "Switch the test IG account to Business or Creator and accept the tester invite",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": [
+    "ig-standard"
+   ]
+  },
+  {
+   "id": "bizver",
+   "title": "Business Verification (Meta Business Manager)",
+   "detail": "Legal name, address, phone and a matching document or domain. Do this first: App Review won't succeed without it.",
+   "owner": "you",
+   "agent": "Collect and check the documents for name/address mismatches",
+   "human": "Upload legal docs and confirm the phone or email",
+   "effortMin": 45,
+   "wait": [
+    2,
+    14
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "ig-advanced"
+   ]
+  },
+  {
+   "id": "privacy",
+   "title": "Privacy policy, data deletion URL, app icon, Live mode",
+   "detail": "Needed before you can submit.",
+   "owner": "agent",
+   "agent": "Draft the privacy policy and a data-deletion callback/instructions page",
+   "human": "",
+   "effortMin": 60,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "screencast",
+   "title": "Record a screencast for each permission",
+   "detail": "Show the full user journey: connect the account, grant the permission, then use it in your UI.",
+   "owner": "both",
+   "agent": "Write the shot list, reviewer test steps and usage notes for each permission",
+   "human": "Record the screencasts",
+   "effortMin": 120,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "review",
+   "title": "Submit App Review for Advanced Access",
+   "detail": "Request only what you use. Every extra permission needs its own justification.",
+   "owner": "both",
+   "agent": "Draft the justifications",
+   "human": "Submit and respond to rejections",
+   "effortMin": 30,
+   "wait": [
+    5,
+    21
+   ],
+   "dependsOn": [
+    "bizver",
+    "privacy",
+    "screencast"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "ig-advanced"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio runs a managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/instagram",
+   "title": "Composio: Instagram toolkit FAQ",
+   "quote": "Copy page Authentication Details Composio-managed OAuth available OAuth2 Frequently Asked Questions Instagram requires a Business or Creator account Why can Instagram reply-to-comment fail with the managed OAuth app?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "ig-advanced",
+   "claim": "Publishing to accounts you don't own needs Advanced Access: App Review plus Business Verification",
+   "url": "https://ugcapi.dev/guides/meta-app-review-content-publish/",
+   "title": "UGC API: Meta App Review for content publishing (screencasts, sequence)",
+   "quote": "That means App Review and Business Verification.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "ig-standard",
+   "claim": "Standard Access works for accounts that have a role on your app",
+   "url": "https://ugcapi.dev/guides/meta-app-review-content-publish/",
+   "title": "UGC API: Meta App Review for content publishing (screencasts, sequence)",
+   "quote": "Updated October 20, 2026 Standard vs Advanced Access Meta apps start with Standard Access, which works for accounts that have a role on your app, like you and your testers.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/instagram",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://facebook.com/dialog/oauth/",
+   "url": "https://www.facebook.com/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://facebook.com/dialog/oauth/",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Authorize endpoint (fake client): HTTP 200 — endpoint is live",
+   "url": "https://www.instagram.com/oauth/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 200 — endpoint is live",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Ship for your own and your team's accounts today with Standard Access.",
+   "Start Business Verification immediately. It gates App Review and is the slowest document step."
+  ],
+  "rejections": [
+   "The screencast doesn't show the permission being used in your UI",
+   "App Review submitted before Business Verification passed",
+   "Requesting permissions the product doesn't use",
+   "The reviewer can't log in: missing test credentials or steps",
+   "Personal Instagram accounts used in the demo"
+  ],
+  "blockers": [
+   {
+    "problem": "Permissions work for you but not for customers",
+    "fix": "You only have Standard Access. Get Advanced Access (Business Verification + App Review)."
+   },
+   {
+    "problem": "A customer's account can't connect",
+    "fix": "It must be a Business or Creator account. Personal accounts aren't supported."
+   }
+  ],
+  "uncertain": [
+   "Meta doesn't publish review times. The 5–21 day range comes from developer reports."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/instagram",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://www.facebook.com/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://facebook.com/dialog/oauth/",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://www.instagram.com/oauth/authorize",
+   "result": "HTTP 200 — endpoint is live",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

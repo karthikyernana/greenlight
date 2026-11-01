@@ -1,0 +1,386 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "hubspot",
+ "name": "HubSpot",
+ "domain": "hubspot.com",
+ "category": "CRM",
+ "console": "https://developers.hubspot.com",
+ "appType": "App on the HubSpot developer platform (OAuth)",
+ "summary": "Usable right away, but capped by install count: 10 allow-listed accounts for private distribution, 25 for an unlisted Marketplace app. Getting past that needs a Marketplace listing, which requires 3 active installs and a review.",
+ "composio": {
+  "managed": "available",
+  "slug": "hubspot",
+  "note": "Composio-managed works, but HubSpot hasn't approved Composio's app yet, so users accept an “unverified app” warning. Composio gives no date for approval.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "crm",
+   "label": "Read & write CRM records",
+   "keywords": [
+    "crm",
+    "contact",
+    "deal",
+    "record",
+    "read",
+    "write",
+    "update"
+   ],
+   "scopes": [
+    {
+     "name": "crm.objects.contacts.read",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "crm.objects.contacts.write",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "oauth",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Works right away, up to 25 accounts before listing",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "hs-caps"
+   ]
+  },
+  {
+   "id": "scale",
+   "label": "More than 25 customer accounts",
+   "keywords": [
+    "many customers",
+    "more than 25",
+    "scale"
+   ],
+   "scopes": [],
+   "tier": "sensitive",
+   "why": "Unlimited installs only after Marketplace listing",
+   "default": true,
+   "gates": [
+    "listing"
+   ],
+   "steps": [],
+   "facts": [
+    "hs-unlimited",
+    "hs-3"
+   ]
+  },
+  {
+   "id": "certified",
+   "label": "Certified badge",
+   "keywords": [
+    "certified",
+    "badge"
+   ],
+   "scopes": [],
+   "tier": "sensitive",
+   "why": "Needs 60 active installs and 6 months listed",
+   "default": false,
+   "gates": [
+    "cert"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-certified"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "listing",
+   "kind": "install_cap",
+   "label": "Install cap until listed",
+   "plain": "25 customer accounts until the app is listed on the Marketplace.",
+   "steps": [
+    "installs",
+    "listing"
+   ],
+   "skip": [
+    {
+     "when": {
+      "audience": "team"
+     },
+     "reason": "Your own HubSpot account is well inside the install cap",
+     "facts": [
+      "hs-caps"
+     ]
+    }
+   ],
+   "needsBusiness": false,
+   "cap": 25,
+   "facts": [
+    "hs-caps",
+    "hs-3"
+   ]
+  },
+  {
+   "id": "cert",
+   "kind": "marketplace_listing",
+   "label": "Certification",
+   "plain": "60 installs and 6 months listed.",
+   "steps": [
+    "cert"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "devacct",
+   "title": "Create a developer account and a test account",
+   "detail": "Apps live in a HubSpot developer account. New public apps have to use the current developer platform, built with projects and the CLI.",
+   "owner": "you",
+   "agent": "Scaffold the project with the HubSpot CLI",
+   "human": "Sign up and verify your email",
+   "effortMin": 20,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://developers.hubspot.com",
+   "facts": []
+  },
+  {
+   "id": "app",
+   "title": "Define the app, scopes and redirect URLs",
+   "detail": "Configure OAuth in app-hsmeta.json and use the OAuth v3 endpoints. Composio BYO callback: https://backend.composio.dev/api/v3/toolkits/auth/callback",
+   "owner": "agent",
+   "agent": "Write the config with least-privilege scopes and deploy it",
+   "human": "",
+   "effortMin": 30,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "aup",
+   "title": "Sign the Acceptable Use Policy",
+   "detail": "Until you sign the AUP, the app can only be installed in developer test accounts.",
+   "owner": "you",
+   "agent": "",
+   "human": "Read and sign it in the developer account",
+   "effortMin": 5,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "installs",
+   "title": "Reach 3 active installs",
+   "detail": "Unaffiliated production accounts making successful API calls in the last 30 days.",
+   "owner": "you",
+   "agent": "Draft the outreach to design partners",
+   "human": "Get 3 real customers to install",
+   "effortMin": 60,
+   "wait": [
+    3,
+    21
+   ],
+   "dependsOn": [
+    "aup"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "hs-3"
+   ]
+  },
+  {
+   "id": "listing",
+   "title": "Submit the Marketplace listing",
+   "detail": "Needs a public setup guide (not behind a login), OAuth as the only auth method, and one app ID.",
+   "owner": "both",
+   "agent": "Write the setup guide and listing copy",
+   "human": "Submit; HubSpot reviews",
+   "effortMin": 180,
+   "wait": [
+    10,
+    30
+   ],
+   "dependsOn": [
+    "installs"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "hs-3"
+   ]
+  },
+  {
+   "id": "cert",
+   "title": "Apply for certification",
+   "detail": "60 active installs, listed for 6 months, plus a demo video.",
+   "owner": "both",
+   "agent": "Draft the demo video script",
+   "human": "Record and submit",
+   "effortMin": 240,
+   "wait": [
+    180,
+    240
+   ],
+   "dependsOn": [
+    "listing"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-cert"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio runs a managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/hubspot",
+   "title": "Composio: HubSpot toolkit FAQ",
+   "quote": "tomation, and analytics to facilitate lead nurturing and seamless customer experiences Copy page Authentication Details Composio-managed OAuth available OAuth2 API Key Frequently Asked Questions Why do users see a \"Connecting an unverified app\" warning?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "hs-caps",
+   "claim": "Unlisted Marketplace apps install in up to 25 accounts; private apps in up to 10 allowlisted accounts",
+   "url": "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/manage-apps-in-hubspot",
+   "title": "HubSpot: Manage apps in HubSpot (install limits)",
+   "quote": "Privately distributed OAuth apps: can be installed in up to 10 allowlisted accounts ( not including developer test accounts).",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "hs-unlimited",
+   "claim": "Listed Marketplace apps have no install limit",
+   "url": "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/manage-apps-in-hubspot",
+   "title": "HubSpot: Manage apps in HubSpot (install limits)",
+   "quote": "Marketplace OAuth app after being listed: can be installed in unlimited accounts.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "hs-3",
+   "claim": "Listing needs at least three active, unique installs",
+   "url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/listing-your-app/app-marketplace-listing-requirements",
+   "title": "HubSpot: App Marketplace listing requirements",
+   "quote": "Installs: your app must have at least three active, unique installs.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "cap-certified",
+   "claim": "Certified badge: Needs 60 active installs and 6 months listed",
+   "url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/apply-for-certification/applying-for-app-certification",
+   "title": "HubSpot: Certification requirements",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-cert",
+   "claim": "Apply for certification: 180–240 days provider-side",
+   "url": "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/apply-for-certification/applying-for-app-certification",
+   "title": "HubSpot: Certification requirements",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/hubspot",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "Authorize endpoint (fake client): HTTP 200 — endpoint is live",
+   "url": "https://app.hubspot.com/oauth/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 200 — endpoint is live",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Ship with Composio-managed HubSpot for the first users (they'll see an unverified-app warning).",
+   "Your own app covers up to 25 accounts before listing. That's enough for a design-partner cohort."
+  ],
+  "rejections": [
+   "The listing redirects to another app or needs a second app to work",
+   "The setup guide is behind a login or links to a generic homepage",
+   "Asks users to paste OAuth codes or tokens",
+   "Built on an unsupported developer platform version (after Nov 2, 2026)"
+  ],
+  "blockers": [
+   {
+    "problem": "Install fails for a 26th customer",
+    "fix": "You've hit the 25-install cap for unlisted Marketplace apps. List the app (3 active installs needed) to remove it."
+   },
+   {
+    "problem": "Users see an “unverified app” warning",
+    "fix": "Verify your domain to soften the warning to a banner. Listing on the Marketplace removes it."
+   }
+  ],
+  "uncertain": [
+   "HubSpot doesn't publish how long Marketplace listing review takes. The 10–30 day range is our estimate."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/hubspot",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://app.hubspot.com/oauth/authorize",
+   "result": "HTTP 200 — endpoint is live",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [
+  {
+   "claim": "Install caps: 10 allowlisted accounts (private), 25 before listing, unlimited after; AUP gates installs",
+   "status": "confirmed",
+   "note": "HubSpot 'Manage apps' page (last modified Aug 6 2026) states all four limits and that unsigned-AUP apps install only in developer test accounts.",
+   "url": "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/manage-apps-in-hubspot",
+   "at": "2026-11-01"
+  }
+ ],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

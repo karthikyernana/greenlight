@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Host_Grotesk, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
-import { libraryIndex } from "@/lib/library";
+import { libraryIndex, intentIndex } from "@/lib/library";
 import HeaderBar from "@/components/HeaderBar";
 import "./globals.css";
 
@@ -10,8 +10,8 @@ const jet = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jet", display
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://oauth-greenlight-v2.vercel.app"),
-  title: "Greenlight: the runway from OAuth app to approval",
-  description: "Pick an app and what your agent needs. See how long approval takes, what blocks it, and get the setup kit an agent can start on today.",
+  title: "Greenlight: how long until your agent's users can connect",
+  description: "Say what your agent needs. Greenlight works out your path from today to real users connecting, from verified facts, and hands you the pieces an agent can prepare.",
 };
 export const viewport: Viewport = { themeColor: "#f5f5f2", width: "device-width", initialScale: 1 };
 
@@ -27,17 +27,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Lamp />
               <span className="text-[15px] font-semibold tracking-[-0.01em]">Greenlight</span>
             </Link>
-            <HeaderBar index={index} />
+            <HeaderBar index={index} intents={intentIndex()} />
             <nav className="ml-auto flex shrink-0 items-center gap-4 text-[13px] text-ink-2">
               <span className="label hidden md:inline num">{index.length} apps</span>
-              <a href="https://github.com/karthikyernana/greenlight/tree/v2#readme" className="hover:text-ink" target="_blank" rel="noreferrer">README</a>
+              <a href="https://github.com/karthikyernana/greenlight/tree/v3#readme" className="hover:text-ink" target="_blank" rel="noreferrer">README</a>
             </nav>
           </div>
         </header>
         <div id="main">{children}</div>
         <footer className="mx-auto mt-20 max-w-[1240px] border-t rule px-4 py-6 sm:px-6">
           <p className="label !normal-case !tracking-normal leading-relaxed">
-            Greenlight v2 · take-home prototype for Composio · guides combine hand research, cited docs and live public probes. Not provider or legal advice: check the sources before you submit.
+            Greenlight v3 · a take-home prototype for Composio. Plans come from hand research, quoted docs and live public probes. Not provider or legal advice: check the sources before you submit.
           </p>
         </footer>
       </body>

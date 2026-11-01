@@ -1,0 +1,373 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "dropbox",
+ "name": "Dropbox",
+ "domain": "dropbox.com",
+ "category": "Files",
+ "console": "https://www.dropbox.com/developers/apps",
+ "appType": "Scoped-access app (App folder or Full Dropbox)",
+ "summary": "Works right away in Development status, but a clock starts at 50 linked users: you then have two weeks to win Production approval or new links freeze. Review checks least-privilege permissions, branding and a privacy policy; Dropbox says it answers nearly all requests within a few business days.",
+ "composio": {
+  "managed": "available",
+  "slug": "dropbox",
+  "note": "Composio's managed app lets users connect today. Bring your own for your brand on the consent screen, custom scopes or your own rate limits.",
+  "facts": []
+ },
+ "capabilities": [
+  {
+   "id": "pilot",
+   "label": "Read & write files, first 50 users",
+   "keywords": [
+    "read",
+    "write",
+    "files",
+    "first",
+    "users"
+   ],
+   "scopes": [
+    {
+     "name": "files.metadata.read",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "files.content.read",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "files.content.write",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Development status: works like production, review not needed below 50 linked users",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-pilot"
+   ]
+  },
+  {
+   "id": "public",
+   "label": "Any Dropbox user can connect",
+   "keywords": [
+    "dropbox",
+    "user",
+    "connect"
+   ],
+   "scopes": [
+    {
+     "name": "files.metadata.read",
+     "tier": "sensitive",
+     "facts": []
+    },
+    {
+     "name": "files.content.read",
+     "tier": "sensitive",
+     "facts": []
+    }
+   ],
+   "tier": "sensitive",
+   "why": "Production approval required once you pass 50 linked users (hard cap 500 in development)",
+   "default": true,
+   "gates": [
+    "gate-1"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-public"
+   ]
+  },
+  {
+   "id": "full",
+   "label": "Access the whole Dropbox, not one folder",
+   "keywords": [
+    "access",
+    "whole",
+    "dropbox",
+    "folder"
+   ],
+   "scopes": [
+    {
+     "name": "(access type: Full Dropbox)",
+     "tier": "sensitive",
+     "facts": []
+    }
+   ],
+   "tier": "sensitive",
+   "why": "Reviewers check the permission isn't broader than the feature needs",
+   "default": false,
+   "gates": [
+    "gate-1"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-full"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "gate-1",
+   "kind": "app_review",
+   "label": "Apply for production status",
+   "plain": "",
+   "steps": [
+    "brand",
+    "users",
+    "apply"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "create",
+   "title": "Create a scoped app in the App Console",
+   "detail": "Choose **App folder** unless the agent truly needs the whole Dropbox: reviewers reject broader access than the features need.",
+   "owner": "both",
+   "agent": "Recommend App folder vs Full Dropbox from your features",
+   "human": "Create it while signed in",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://www.dropbox.com/developers/apps",
+   "facts": []
+  },
+  {
+   "id": "perms",
+   "title": "Set permissions and redirect URIs",
+   "detail": "Permissions tab: tick only the scopes you use. Settings: add redirect URIs (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback).",
+   "owner": "agent",
+   "agent": "Configure scopes and test the OAuth flow with PKCE",
+   "human": "",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "brand",
+   "title": "Fix branding and publish an app-specific privacy policy",
+   "detail": "Follow the developer branding guidelines (don't lead your name with \"Dropbox\") and say what the app will and won't do with user data.",
+   "owner": "agent",
+   "agent": "Draft the privacy policy and check names/logos against the guidelines",
+   "human": "",
+   "effortMin": 60,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "users",
+   "title": "Reach 50 linked users",
+   "detail": "You can apply any time, but Dropbox won't review until 50 users are linked. From the 50th link you have **two weeks** before new links freeze.",
+   "owner": "you",
+   "agent": "Draft the beta invite",
+   "human": "Recruit users",
+   "effortMin": 60,
+   "wait": [
+    7,
+    30
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-users"
+   ]
+  },
+  {
+   "id": "apply",
+   "title": "Apply for production status",
+   "detail": "App Console → Apply for production. Explain how the app uses the API, upload an icon, and mention planned features that justify broader permissions.",
+   "owner": "both",
+   "agent": "Write the application text and permission justifications",
+   "human": "Submit",
+   "effortMin": 30,
+   "wait": [
+    2,
+    7
+   ],
+   "dependsOn": [
+    "users",
+    "brand"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-apply"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "cap-pilot",
+   "claim": "Read & write files, first 50 users: Development status: works like production, review not needed below 50 linked users",
+   "url": "https://docs.dropboxapi.com/dropbox-api/docs/developer-resources/developer-guide",
+   "title": "Dropbox: DBX Platform developer guide (production approval)",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-public",
+   "claim": "Any Dropbox user can connect: Production approval required once you pass 50 linked users (hard cap 500 in development)",
+   "url": "https://docs.dropboxapi.com/dropbox-api/docs/developer-resources/developer-guide",
+   "title": "Dropbox: DBX Platform developer guide (production approval)",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-full",
+   "claim": "Access the whole Dropbox, not one folder: Reviewers check the permission isn't broader than the feature needs",
+   "url": "https://docs.dropboxapi.com/dropbox-api/docs/developer-resources/developer-guide",
+   "title": "Dropbox: DBX Platform developer guide (production approval)",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-users",
+   "claim": "Reach 50 linked users: 7–30 days provider-side",
+   "url": "https://docs.dropboxapi.com/dropbox-api/docs/developer-resources/developer-guide",
+   "title": "Dropbox: DBX Platform developer guide (production approval)",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-apply",
+   "claim": "Apply for production status: 2–7 days provider-side",
+   "url": "https://docs.dropboxapi.com/dropbox-api/docs/developer-resources/developer-guide",
+   "title": "Dropbox: DBX Platform developer guide (production approval)",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/dropbox",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://www.dropbox.com/oauth2/authorize · 3 scopes advertised",
+   "url": "https://dropbox.com/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://www.dropbox.com/oauth2/authorize · 3 scopes advertised",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Developer portal reachability: Reachable: https://www.dropbox.com/developers",
+   "url": "https://developers.dropbox.com",
+   "title": "Developer portal reachability",
+   "quote": "Reachable: https://www.dropbox.com/developers",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-4",
+   "claim": "Authorize endpoint (fake client): HTTP 302 → www.dropbox.com/oauth2/authorize_error — redirects an unknown client to a sign-in/error page",
+   "url": "https://www.dropbox.com/oauth2/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 302 → www.dropbox.com/oauth2/authorize_error — redirects an unknown client to a sign-in/error page",
+   "checked": "2026-11-01",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Composio-managed Dropbox works today.",
+   "Your own app serves 50 users with no review. Submit the production application early so the 2-week clock never bites."
+  ],
+  "rejections": [
+   "Requests Full Dropbox when an App folder would do",
+   "Breaks the branding guidelines (e.g. app name starting with Dropbox)",
+   "No app-specific privacy policy",
+   "App type on Dropbox's not-allowed list"
+  ],
+  "blockers": [
+   {
+    "problem": "\"Ability to link additional users frozen\"",
+    "fix": "You passed 50 users without production approval inside two weeks. Apply (or follow up on the pending request); links resume once approved."
+   },
+   {
+    "problem": "Need to rename the app after approval",
+    "fix": "Production apps can't be renamed by you. Open an API support ticket."
+   }
+  ],
+  "uncertain": [
+   "\"A few business days\" is Dropbox's own statement; we haven't measured it.",
+   "Team (Business API) apps have separate development limits that the cited guide doesn't cover in detail."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/dropbox",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://dropbox.com/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://www.dropbox.com/oauth2/authorize · 3 scopes advertised",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "Developer portal reachability",
+   "url": "https://developers.dropbox.com",
+   "result": "Reachable: https://www.dropbox.com/developers",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://www.dropbox.com/oauth2/authorize",
+   "result": "HTTP 302 → www.dropbox.com/oauth2/authorize_error — redirects an unknown client to a sign-in/error page",
+   "ok": true,
+   "at": "2026-11-01"
+  }
+ ],
+ "checks": [],
+ "origin": "generated",
+ "verifiedAt": "2026-11-01",
+ "model": "batch v2: offline research agent (Hark) from cited pages, same schema; not yet human-reviewed"
+}

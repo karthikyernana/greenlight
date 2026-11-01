@@ -1,0 +1,341 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "calendly",
+ "name": "Calendly",
+ "domain": "calendly.com",
+ "category": "Scheduling",
+ "console": "https://developer.calendly.com",
+ "appType": "OAuth app (OAuth 2.1, PKCE), Sandbox or Production",
+ "summary": "No review gate: a Production OAuth app works for any Calendly user the moment you create it. Two gotchas: each app takes exactly one redirect URI, and new apps get no API access until you pick scopes.",
+ "composio": {
+  "managed": "available",
+  "slug": "calendly",
+  "note": "Composio's managed app lets users connect today. Bring your own for your brand on the consent screen, custom scopes or your own rate limits.",
+  "facts": []
+ },
+ "capabilities": [
+  {
+   "id": "read",
+   "label": "Read meetings & availability",
+   "keywords": [
+    "read",
+    "meetings",
+    "availability"
+   ],
+   "scopes": [
+    {
+     "name": "scheduled_events:read",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "event_types:read",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "availability:read",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "users:read",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Pick the scopes when you create the app; no review",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-read"
+   ]
+  },
+  {
+   "id": "book",
+   "label": "Book, cancel & share links",
+   "keywords": [
+    "book",
+    "cancel",
+    "share",
+    "links"
+   ],
+   "scopes": [
+    {
+     "name": "scheduled_events:write",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "scheduling_links:write",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "shares:write",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Write scopes include the matching read scope; no review",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-book"
+   ]
+  },
+  {
+   "id": "webhooks",
+   "label": "Real-time webhooks",
+   "keywords": [
+    "real",
+    "time",
+    "webhooks"
+   ],
+   "scopes": [
+    {
+     "name": "webhooks:write",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "scheduled_events:read",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Needs the related read scopes to receive payloads",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-webhooks"
+   ]
+  }
+ ],
+ "gates": [],
+ "steps": [
+  {
+   "id": "devacct",
+   "title": "Create a Calendly developer account",
+   "detail": "Sign up on developer.calendly.com with GitHub or Google. It is **separate from your Calendly user account**.",
+   "owner": "you",
+   "agent": "",
+   "human": "Sign up",
+   "effortMin": 5,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "sandbox",
+   "title": "Create a Sandbox app for development",
+   "detail": "OAuth apps → Create OAuth app → Environment: Sandbox. Sandbox allows `http://localhost` redirect URIs.",
+   "owner": "both",
+   "agent": "Pick the minimal scopes and wire up PKCE locally",
+   "human": "Click create while signed in",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "scopes",
+   "title": "Choose scopes up front",
+   "detail": "New apps get **no API access** until scopes are selected. Request the minimum; adding scopes later means users must re-authorize.",
+   "owner": "agent",
+   "agent": "Map each agent feature to the scope catalog",
+   "human": "",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "prod",
+   "title": "Create a separate Production app",
+   "detail": "Production requires https and accepts **exactly one redirect URI**, so use one app for Composio BYO (https://backend.composio.dev/api/v3/toolkits/auth/callback) and another for your own callback.",
+   "owner": "both",
+   "agent": "Prepare both app configs",
+   "human": "Create them and store the secrets",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "tokens",
+   "title": "Handle tokens the Calendly way",
+   "detail": "Access tokens last 2 hours; refresh tokens don't expire until used (store the new one every time); max 8 token requests per user per minute.",
+   "owner": "agent",
+   "agent": "Implement refresh with single-use refresh tokens and backoff",
+   "human": "",
+   "effortMin": 30,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "cap-read",
+   "claim": "Read meetings & availability: Pick the scopes when you create the app; no review",
+   "url": "https://developer.calendly.com/docs/authentication/creating-an-oauth-app",
+   "title": "Calendly: Creating an OAuth app",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-book",
+   "claim": "Book, cancel & share links: Write scopes include the matching read scope; no review",
+   "url": "https://developer.calendly.com/docs/authentication/scopes",
+   "title": "Calendly: Authorization scopes",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-webhooks",
+   "claim": "Real-time webhooks: Needs the related read scopes to receive payloads",
+   "url": "https://developer.calendly.com/docs/authentication/scopes",
+   "title": "Calendly: Authorization scopes",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/calendly",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://calendly.com/oauth/authorize · PKCE: S256 · dynamic client registration endpoint advertised",
+   "url": "https://calendly.com/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://calendly.com/oauth/authorize · PKCE: S256 · dynamic client registration endpoint advertised",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Developer portal reachability: Reachable: https://developer.calendly.com/docs/getting-started/overview",
+   "url": "https://developers.calendly.com",
+   "title": "Developer portal reachability",
+   "quote": "Reachable: https://developer.calendly.com/docs/getting-started/overview",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-4",
+   "claim": "Authorize endpoint (fake client): HTTP 301 → calendly.com/oauth/authorize — redirects an unknown client to a sign-in/error page",
+   "url": "https://auth.calendly.com/oauth/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 301 → calendly.com/oauth/authorize — redirects an unknown client to a sign-in/error page",
+   "checked": "2026-11-01",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Composio-managed Calendly works today.",
+   "Or create your Production app today: there is no approval queue."
+  ],
+  "rejections": [
+   "No review exists, so failures show up at runtime: redirect_uri mismatch (one URI per app)",
+   "403 missing scope: the app was created without the scope the endpoint needs"
+  ],
+  "blockers": [
+   {
+    "problem": "403 insufficient permissions",
+    "fix": "The token lacks a scope. Add it to the app and send the user through OAuth again."
+   },
+   {
+    "problem": "Refresh suddenly fails",
+    "fix": "Refresh tokens are single-use. Persist the new refresh token from every refresh response."
+   },
+   {
+    "problem": "Need two callbacks (yours + Composio)",
+    "fix": "Production apps take one redirect URI. Create a second app."
+   }
+  ],
+  "uncertain": [
+   "Calendly's docs describe no review gate for Production apps. That is confirmed by its absence, not by an explicit statement.",
+   "Whether webhook delivery depends on the end user's Calendly plan isn't stated on the pages read."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/calendly",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://calendly.com/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://calendly.com/oauth/authorize · PKCE: S256 · dynamic client registration endpoint advertised",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "Developer portal reachability",
+   "url": "https://developers.calendly.com",
+   "result": "Reachable: https://developer.calendly.com/docs/getting-started/overview",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://auth.calendly.com/oauth/authorize",
+   "result": "HTTP 301 → calendly.com/oauth/authorize — redirects an unknown client to a sign-in/error page",
+   "ok": true,
+   "at": "2026-11-01"
+  }
+ ],
+ "checks": [],
+ "origin": "generated",
+ "verifiedAt": "2026-11-01",
+ "model": "batch v2: offline research agent (Hark) from cited pages, same schema; not yet human-reviewed"
+}

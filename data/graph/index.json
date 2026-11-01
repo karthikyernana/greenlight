@@ -1,0 +1,151 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "built": "2026-11-01",
+ "providers": [
+  {
+   "slug": "github",
+   "name": "GitHub",
+   "origin": "curated",
+   "facts": 10,
+   "sourced": 1,
+   "tested": 3,
+   "uncertain": 6
+  },
+  {
+   "slug": "notion",
+   "name": "Notion",
+   "origin": "curated",
+   "facts": 7,
+   "sourced": 2,
+   "tested": 4,
+   "uncertain": 1
+  },
+  {
+   "slug": "slack",
+   "name": "Slack",
+   "origin": "curated",
+   "facts": 10,
+   "sourced": 4,
+   "tested": 5,
+   "uncertain": 1
+  },
+  {
+   "slug": "hubspot",
+   "name": "HubSpot",
+   "origin": "curated",
+   "facts": 8,
+   "sourced": 3,
+   "tested": 3,
+   "uncertain": 2
+  },
+  {
+   "slug": "outlook",
+   "name": "Microsoft Outlook (Graph)",
+   "origin": "curated",
+   "facts": 11,
+   "sourced": 5,
+   "tested": 4,
+   "uncertain": 2
+  },
+  {
+   "slug": "gmail",
+   "name": "Gmail (Google)",
+   "origin": "curated",
+   "facts": 16,
+   "sourced": 10,
+   "tested": 4,
+   "uncertain": 2
+  },
+  {
+   "slug": "salesforce",
+   "name": "Salesforce",
+   "origin": "curated",
+   "facts": 8,
+   "sourced": 1,
+   "tested": 4,
+   "uncertain": 3
+  },
+  {
+   "slug": "instagram",
+   "name": "Instagram (Meta)",
+   "origin": "curated",
+   "facts": 6,
+   "sourced": 2,
+   "tested": 4,
+   "uncertain": 0
+  },
+  {
+   "slug": "linkedin",
+   "name": "LinkedIn",
+   "origin": "curated",
+   "facts": 8,
+   "sourced": 3,
+   "tested": 4,
+   "uncertain": 1
+  },
+  {
+   "slug": "twitter",
+   "name": "X (Twitter)",
+   "origin": "curated",
+   "facts": 5,
+   "sourced": 2,
+   "tested": 3,
+   "uncertain": 0
+  },
+  {
+   "slug": "spotify",
+   "name": "Spotify",
+   "origin": "generated",
+   "facts": 7,
+   "sourced": 0,
+   "tested": 4,
+   "uncertain": 3
+  },
+  {
+   "slug": "zoom",
+   "name": "Zoom",
+   "origin": "generated",
+   "facts": 8,
+   "sourced": 0,
+   "tested": 4,
+   "uncertain": 4
+  },
+  {
+   "slug": "shopify",
+   "name": "Shopify",
+   "origin": "generated",
+   "facts": 9,
+   "sourced": 0,
+   "tested": 4,
+   "uncertain": 5
+  },
+  {
+   "slug": "calendly",
+   "name": "Calendly",
+   "origin": "generated",
+   "facts": 7,
+   "sourced": 0,
+   "tested": 4,
+   "uncertain": 3
+  },
+  {
+   "slug": "dropbox",
+   "name": "Dropbox",
+   "origin": "generated",
+   "facts": 9,
+   "sourced": 0,
+   "tested": 4,
+   "uncertain": 5
+  },
+  {
+   "slug": "docusign",
+   "name": "Docusign",
+   "origin": "generated",
+   "facts": 9,
+   "sourced": 0,
+   "tested": 4,
+   "uncertain": 5
+  }
+ ]
+}

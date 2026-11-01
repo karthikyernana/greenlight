@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Guide } from "@/lib/types";
+import type { Guide, Step } from "@/lib/types";
 import { buildKit, kitMarkdown } from "@/lib/kit";
 
 export async function copyText(text: string) {
@@ -17,8 +17,8 @@ export async function copyText(text: string) {
 }
 
 /** One drawer with everything an agent can produce right now. Deterministic, instant, no model call. */
-export default function SetupKit({ g, sel, shareUrl, onClose }: { g: Guide; sel: string[]; shareUrl: string; onClose: () => void }) {
-  const kit = useMemo(() => buildKit(g, sel, shareUrl), [g, sel, shareUrl]);
+export default function SetupKit({ g, sel, shareUrl, onClose, planned }: { g: Guide; sel: string[]; shareUrl: string; onClose: () => void; planned?: { steps: Step[]; wait: string } }) {
+  const kit = useMemo(() => buildKit(g, sel, shareUrl, planned), [g, sel, shareUrl, planned]);
   const [copied, setCopied] = useState("");
   const panel = useRef<HTMLDivElement>(null);
 
@@ -37,7 +37,7 @@ export default function SetupKit({ g, sel, shareUrl, onClose }: { g: Guide; sel:
     setTimeout(() => setCopied(""), 1600);
   };
   const download = () => {
-    const blob = new Blob([kitMarkdown(g, sel, shareUrl)], { type: "text/markdown" });
+    const blob = new Blob([kitMarkdown(g, sel, shareUrl, planned)], { type: "text/markdown" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${g.slug}-oauth-setup-kit.md`;

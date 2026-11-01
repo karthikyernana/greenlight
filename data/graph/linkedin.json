@@ -1,0 +1,424 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "linkedin",
+ "name": "LinkedIn",
+ "domain": "linkedin.com",
+ "category": "Social",
+ "console": "https://www.linkedin.com/developers/apps",
+ "appType": "LinkedIn developer app",
+ "summary": "Sign-in and posting as the member are self-serve and instant. Anything company-page or marketing related is partner-gated: you apply, LinkedIn vets you, and approval isn't guaranteed.",
+ "composio": {
+  "managed": "available",
+  "slug": "linkedin",
+  "note": "Composio-managed works for the standard scopes. LinkedIn won't combine some scopes in one app (e.g. w_member_social with r_organization_admin), so those need your own app.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "signin",
+   "label": "Sign In with LinkedIn (OIDC)",
+   "keywords": [
+    "sign in",
+    "login"
+   ],
+   "scopes": [
+    {
+     "name": "openid",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "profile",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "email",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Self-serve product, added automatically to new apps",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "li-open"
+   ]
+  },
+  {
+   "id": "share",
+   "label": "Post as the member",
+   "keywords": [
+    "post",
+    "share",
+    "publish"
+   ],
+   "scopes": [
+    {
+     "name": "w_member_social",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "“Share on LinkedIn” is self-serve",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "li-open"
+   ]
+  },
+  {
+   "id": "pages",
+   "label": "Manage company pages",
+   "keywords": [
+    "company page",
+    "organization",
+    "organisation",
+    "page"
+   ],
+   "scopes": [
+    {
+     "name": "w_organization_social",
+     "tier": "partner",
+     "facts": []
+    },
+    {
+     "name": "r_organization_social",
+     "tier": "partner",
+     "facts": []
+    },
+    {
+     "name": "rw_organization_admin",
+     "tier": "partner",
+     "facts": []
+    }
+   ],
+   "tier": "partner",
+   "why": "Community Management API: access request plus vetting, development tier first",
+   "default": false,
+   "gates": [
+    "cm"
+   ],
+   "steps": [],
+   "facts": [
+    "li-tiers"
+   ]
+  },
+  {
+   "id": "ads",
+   "label": "Ads & marketing data",
+   "keywords": [
+    "ads",
+    "campaign",
+    "advertis"
+   ],
+   "scopes": [
+    {
+     "name": "r_ads",
+     "tier": "partner",
+     "facts": []
+    },
+    {
+     "name": "rw_ads",
+     "tier": "partner",
+     "facts": []
+    },
+    {
+     "name": "r_ads_reporting",
+     "tier": "partner",
+     "facts": []
+    }
+   ],
+   "tier": "partner",
+   "why": "Advertising API needs approval",
+   "default": false,
+   "gates": [
+    "ads"
+   ],
+   "steps": [],
+   "facts": [
+    "li-tiers"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "cm",
+   "kind": "partner_program",
+   "label": "Community Management API vetting",
+   "plain": "LinkedIn vets your company and use case, then a second review for full access.",
+   "steps": [
+    "cmapp",
+    "request",
+    "standard"
+   ],
+   "skip": [],
+   "needsBusiness": true,
+   "facts": [
+    "li-tiers",
+    "li-standard-req"
+   ]
+  },
+  {
+   "id": "ads",
+   "kind": "partner_program",
+   "label": "Advertising API access",
+   "plain": "LinkedIn approves ad access separately.",
+   "steps": [
+    "request"
+   ],
+   "skip": [],
+   "needsBusiness": true,
+   "facts": [
+    "li-tiers"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "id": "page",
+   "title": "Create (or pick) a LinkedIn Company Page",
+   "detail": "Every app must be associated with a company page, and a page super admin has to verify the association.",
+   "owner": "you",
+   "agent": "",
+   "human": "Create the page or ask its super admin to verify the app",
+   "effortMin": 15,
+   "wait": [
+    0,
+    2
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": [
+    "wait-page"
+   ]
+  },
+  {
+   "id": "app",
+   "title": "Create the developer app",
+   "detail": "Add the self-serve products (Sign In with LinkedIn using OIDC, Share on LinkedIn) and redirect URLs (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback).",
+   "owner": "both",
+   "agent": "Configure the products and redirect URLs",
+   "human": "Create it while signed in",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://www.linkedin.com/developers/apps",
+   "facts": []
+  },
+  {
+   "id": "cmapp",
+   "title": "Create a separate app just for Community Management",
+   "detail": "Community Management has to be the only product on its app. The request button is greyed out if other products are attached.",
+   "owner": "both",
+   "agent": "Set up the second app",
+   "human": "Create it and verify it with the page",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "request",
+   "title": "Submit the access request form",
+   "detail": "Use a company email (personal email addresses fail vetting). Describe a supported use case that complies with the Marketing API terms.",
+   "owner": "both",
+   "agent": "Draft the use-case description against the API terms",
+   "human": "Submit as the legal entity",
+   "effortMin": 45,
+   "wait": [
+    7,
+    30
+   ],
+   "dependsOn": [
+    "cmapp"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "li-tiers"
+   ]
+  },
+  {
+   "id": "standard",
+   "title": "Build on the development tier, then request the Standard tier",
+   "detail": "The Standard tier needs a fully integrated app and a second review (screencast and test access).",
+   "owner": "both",
+   "agent": "Build against the dev tier; prepare the review materials",
+   "human": "Submit the upgrade request",
+   "effortMin": 480,
+   "wait": [
+    14,
+    45
+   ],
+   "dependsOn": [
+    "request"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "li-standard-req"
+   ]
+  }
+ ],
+ "alternatives": [
+  {
+   "id": "member-not-page",
+   "replace": [
+    "pages"
+   ],
+   "with": [
+    "share"
+   ],
+   "label": "Post as the member (w_member_social) instead of as the company page",
+   "tradeoff": "Posts appear on the person's profile, not the company page.",
+   "facts": [
+    "li-open"
+   ]
+  }
+ ],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio runs a managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/linkedin",
+   "title": "Composio: LinkedIn toolkit FAQ (scope combinations)",
+   "quote": "es, and thought leaders to connect, share content, and discover business opportunities Copy page Authentication Details Composio-managed OAuth available OAuth2 Frequently Asked Questions How do I set up custom OAuth credentials for LinkedIn?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "li-open",
+   "claim": "Open permissions are the only ones available without LinkedIn's approval",
+   "url": "https://learn.microsoft.com/en-us/linkedin/shared/authentication/getting-access",
+   "title": "Microsoft Learn: Getting access to LinkedIn APIs",
+   "quote": "Open Permissions are the only permissions that are available to all developers without special approval.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "li-tiers",
+   "claim": "Community Management and Advertising APIs start at Development tier; Standard tier is a separate application",
+   "url": "https://learn.microsoft.com/en-us/linkedin/marketing/increasing-access?view=li-lms-2026-10",
+   "title": "Microsoft Learn: Increasing access (Marketing APIs)",
+   "quote": "All applications start with Development tier.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "li-standard-req",
+   "claim": "Standard tier needs a fully integrated Community Management app",
+   "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management-app-review?view=li-lms-2026-09",
+   "title": "Microsoft Learn: Community Management app review",
+   "quote": "Requirements for Standard Tier Upgrade Only Make sure your application has been approved for the development tier and you have fully integrated the Community Management APIs into your application.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "wait-page",
+   "claim": "Create (or pick) a LinkedIn Company Page: 0–2 days provider-side",
+   "url": "https://learn.microsoft.com/en-us/linkedin/marketing/community-management-app-review?view=li-lms-2026-09",
+   "title": "Microsoft Learn: Community Management app review",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/linkedin",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://www.linkedin.com/oauth/v2/authorization · 3 scopes advertised",
+   "url": "https://www.linkedin.com/oauth/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://www.linkedin.com/oauth/v2/authorization · 3 scopes advertised",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Authorize endpoint (fake client): HTTP 200 — rejects unknown client: “client_id is invalid greenlight-probe-000 !DOCTYPE html”",
+   "url": "https://www.linkedin.com/oauth/v2/authorization",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 200 — rejects unknown client: “client_id is invalid greenlight-probe-000 !DOCTYPE html”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Ship sign-in plus posting as the member today. Both are self-serve.",
+   "Apply for Community Management on a separate app now if you'll ever need company pages. Vetting is slow and uncertain."
+  ],
+  "rejections": [
+   "Personal email or an unverified company page on the access request",
+   "Use case not supported by the Marketing API terms (e.g. scraping, automating member outreach)",
+   "The app has other products attached (Community Management must be alone)",
+   "Requesting Standard tier before the integration is complete"
+  ],
+  "blockers": [
+   {
+    "problem": "The Community Management request button is greyed out",
+    "fix": "Remove other products, or create a new app that only has Community Management."
+   },
+   {
+    "problem": "Rejected during vetting",
+    "fix": "File a vetting appeal through the LinkedIn contact form (Form Type: Vetting Appeal) with your client ID."
+   }
+  ],
+  "uncertain": [
+   "LinkedIn doesn't publish vetting times. The ranges shown are estimates."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/linkedin",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://www.linkedin.com/oauth/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://www.linkedin.com/oauth/v2/authorization · 3 scopes advertised",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://www.linkedin.com/oauth/v2/authorization",
+   "result": "HTTP 200 — rejects unknown client: “client_id is invalid greenlight-probe-000 !DOCTYPE html”",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

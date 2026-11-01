@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { IndexEntry } from "@/lib/types";
 import { exact, hrefFor, match } from "@/lib/search";
+import { parseIntent, intentHref, type IntentIndex } from "@/lib/intent";
 
 type Sort = "wait" | "name";
 
 /** Landing = one command bar + the departure board. Typing filters live; Enter opens or investigates. */
-export default function Board({ index }: { index: IndexEntry[] }) {
+export default function Board({ index, intents }: { index: IndexEntry[]; intents: IntentIndex[] }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("wait");
@@ -34,9 +35,10 @@ export default function Board({ index }: { index: IndexEntry[] }) {
     return [...ready.sort(by), ...rest.sort((a, b) => a.name.localeCompare(b.name))];
   }, [index, sort, dir]);
 
-  const rows = useMemo(() => (q.trim() ? match(sorted, q) : sorted), [sorted, q]);
+  const intent = useMemo(() => (q.trim().split(/\s+/).length >= 3 ? parseIntent(q, intents) : null), [q, intents]);
+  const rows = useMemo(() => (intent ? (intent.slug ? sorted.filter((e) => e.slug === intent.slug) : []) : q.trim() ? match(sorted, q) : sorted), [sorted, q, intent]);
   const hit = exact(index, q);
-  const live = q.trim() && !hit ? q.trim() : "";
+  const live = intent ? "" : q.trim() && !hit ? q.trim() : "";
   const total = rows.length + (live ? 1 : 0);
   const readyCount = index.filter((e) => e.curated || e.generated).length;
 
@@ -49,6 +51,7 @@ export default function Board({ index }: { index: IndexEntry[] }) {
     if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); }
     if (e.key === "Escape") setQ("");
     if (e.key === "Enter") {
+      if (intent) { router.push(intentHref(intent)); return; }
       const href = target(rows.length ? hi : 0);
       if (href) router.push(href);
     }
@@ -70,8 +73,8 @@ export default function Board({ index }: { index: IndexEntry[] }) {
         <h1 className="max-w-[760px] text-[30px] font-semibold leading-[1.08] tracking-[-0.025em] sm:text-[44px]">
           How long until your agent&apos;s users can connect?
         </h1>
-        <p className="mt-3 max-w-[620px] text-[15px] text-ink-2">
-          The client ID takes minutes. Approval takes days to months, and the scopes you ask for decide which. Type an app.
+        <p className="mt-3 max-w-[640px] text-[15px] text-ink-2">
+          Registering an OAuth app takes minutes. Approval takes days to months, and the permissions you ask for decide which. Name an app, or say what your agent does.
         </p>
         <label className="mt-7 flex h-14 items-center gap-3 border border-ink bg-surface px-4 focus-within:shadow-[0_0_0_3px_var(--color-signal)]">
           <span className="mono text-[18px] text-signal-ink" aria-hidden>→</span>
@@ -80,16 +83,27 @@ export default function Board({ index }: { index: IndexEntry[] }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKey}
-            placeholder="Gmail, Salesforce, or any app or URL"
-            aria-label="Find an app, or type any app name or URL to investigate it live"
+            placeholder="Gmail, or “triages my users’ Gmail and drafts replies”"
+            aria-label="Name an app, or describe what your agent does"
             className="min-w-0 flex-1 bg-transparent text-[18px] outline-none placeholder:text-ink-3"
             autoComplete="off"
             spellCheck={false}
           />
           <span className="label hidden !normal-case sm:inline">
-            <span className="kbd">↵</span> {live && !rows.length ? "investigate live" : "open"}
+            <span className="kbd">↵</span> {intent ? "plan it" : live && !rows.length ? "investigate" : "open"}
           </span>
         </label>
+        {intent && (
+          <p className="mono mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-ink-2 fill-in" aria-live="polite">
+            <span className="text-ink-3">Read as</span>
+            <span className="border border-ink px-1.5">{intent.app || "?"}</span>
+            {intent.caps.map((c) => <span key={c} className="border rule px-1.5">{intents.find((x) => x.slug === intent.slug)?.caps.find((k) => k.id === c)?.label || c}</span>)}
+            {intent.profile.audience && <span className="border rule px-1.5">{intent.profile.audience === "team" ? "just my team" : "public users"}</span>}
+            {intent.profile.scale && <span className="border rule px-1.5">{intent.profile.scale === "small" ? "up to 100 users" : "100+ users"}</span>}
+            {intent.profile.business === false && <span className="border rule px-1.5">no registered business</span>}
+            <span className="text-ink-3">{intent.ready ? "· plan is instant" : "· will be investigated"}</span>
+          </p>
+        )}
       </section>
 
       <section aria-label="Departure board">
@@ -145,9 +159,9 @@ export default function Board({ index }: { index: IndexEntry[] }) {
               href={hrefFor(null, q)}
               onHover={() => setHi(rows.length)}
               cells={[
-                <span key="a" className="flex min-w-0 items-center gap-2"><span className="text-signal-ink" aria-hidden>+</span><span className="truncate">Investigate <b className="font-semibold">“{live}”</b> live</span></span>,
-                <span key="b" className="text-ink-3">Agent checks Composio, probes endpoints, reads the docs</span>,
-                <span key="c" className="mono text-ink-3">~1 min</span>,
+                <span key="a" className="flex min-w-0 items-center gap-2"><span className="text-signal-ink" aria-hidden>+</span><span className="truncate">Investigate <b className="font-semibold">“{live}”</b></span></span>,
+                <span key="b" className="text-ink-3">Agents read its docs, test its endpoints, check every quote</span>,
+                <span key="c" className="mono text-ink-3">1–3 min</span>,
                 <span key="d" className="mono text-ink-3">—</span>,
                 <span key="e" className="mono text-signal-ink">RUN ↗</span>,
               ]}
@@ -155,7 +169,7 @@ export default function Board({ index }: { index: IndexEntry[] }) {
           )}
         </div>
         <p className="label mt-4 !normal-case !tracking-normal">
-          <span className="kbd">/</span> search · <span className="kbd">↑</span><span className="kbd">↓</span> move · <span className="kbd">↵</span> open. Managed = Composio already runs an approved OAuth app for it. Data: Composio directory scraped 2026-10-30; guides verified 2026-10-30, spot-checked 2026-11-01.
+          <span className="kbd">/</span> search · <span className="kbd">↑</span><span className="kbd">↓</span> move · <span className="kbd">↵</span> open. Managed: Composio already runs an approved OAuth app for it. Composio directory read 2026-10-30. Guides checked 2026-11-01.
         </p>
       </section>
     </main>

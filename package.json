@@ -1,6 +1,6 @@
 {
   "name": "greenlight",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "eval": "tsx scripts/eval.ts",
+    "graph": "tsx scripts/build-graph.ts"
   },
   "dependencies": {
     "@vercel/oidc": "^4.0.5",

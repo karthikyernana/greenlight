@@ -1,0 +1,299 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "notion",
+ "name": "Notion",
+ "domain": "notion.com",
+ "category": "Productivity",
+ "console": "https://app.notion.com/developers/connections",
+ "appType": "Public connection (OAuth 2.0)",
+ "summary": "Self-serve. A public connection works for any workspace the moment you create it. Notion has no per-scope review; users choose which pages to share. Marketplace listing is optional.",
+ "composio": {
+  "managed": "available",
+  "slug": "notion",
+  "note": "Composio-managed auth works today. Composio notes that actions then show “Composio” as the actor, not your app, which is a reason to bring your own.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "content",
+   "label": "Read & write shared pages/databases",
+   "keywords": [
+    "page",
+    "database",
+    "doc",
+    "note",
+    "read",
+    "write",
+    "wiki"
+   ],
+   "scopes": [
+    {
+     "name": "(capabilities: read, update, insert content)",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "No scope review. Access is limited to the pages each user picks",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "nt-scope"
+   ]
+  },
+  {
+   "id": "email",
+   "label": "Read user emails",
+   "keywords": [
+    "email",
+    "user info"
+   ],
+   "scopes": [
+    {
+     "name": "(capability: read user information incl. email)",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "A checkbox on the connection's capabilities",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-email"
+   ]
+  },
+  {
+   "id": "listing",
+   "label": "Listed on Notion Marketplace",
+   "keywords": [
+    "marketplace",
+    "listed",
+    "gallery"
+   ],
+   "scopes": [],
+   "tier": "sensitive",
+   "why": "Public connections go through a Notion security review before listing",
+   "default": false,
+   "gates": [
+    "listing"
+   ],
+   "steps": [],
+   "facts": [
+    "nt-eligible"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "listing",
+   "kind": "marketplace_listing",
+   "label": "Marketplace review",
+   "plain": "Optional: Notion reviews before listing.",
+   "steps": [
+    "listing"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": [
+    "nt-eligible"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "id": "create",
+   "title": "Create a public connection",
+   "detail": "Developer portal → Public connections → Create. Choose an installation scope (Any workspace or Selected workspaces). **You can't change it later**, and only 'Any workspace' can be listed on the Marketplace.",
+   "owner": "both",
+   "agent": "Pre-fill the name, redirect URIs and capabilities",
+   "human": "Choose the installation scope (permanent) and create it",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://app.notion.com/developers/connections",
+   "facts": [
+    "nt-scope"
+   ]
+  },
+  {
+   "id": "org",
+   "title": "Add organization details",
+   "detail": "Company name, website, privacy policy, terms of use and support email appear on the consent screen.",
+   "owner": "agent",
+   "agent": "Draft a privacy policy and terms page if you don't have them",
+   "human": "Publish them on your domain",
+   "effortMin": 30,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "redirect",
+   "title": "Register exact redirect URIs",
+   "detail": "If you register more than one URI, the token request must include redirect_uri. Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback",
+   "owner": "agent",
+   "agent": "Configure the URIs and test the token exchange",
+   "human": "",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "listing",
+   "title": "Submit the Marketplace listing (optional)",
+   "detail": "Only 'Any workspace' connections are eligible. Notion runs a security review before listing.",
+   "owner": "both",
+   "agent": "Draft listing copy and screenshots",
+   "human": "Submit and answer reviewer questions",
+   "effortMin": 120,
+   "wait": [
+    5,
+    20
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "nt-eligible"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio runs a managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/notion",
+   "title": "Composio: Notion toolkit",
+   "quote": "space, letting teams build custom workflows for collaboration and knowledge management Copy page Authentication Details Composio-managed OAuth available OAuth2 API Key Frequently Asked Questions Why do Notion operations show \"Composio\" instead of the user's name?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "nt-scope",
+   "claim": "A public connection's installation scope (Any workspace or Selected workspaces) is chosen at creation",
+   "url": "https://developers.notion.com/guides/get-started/public-connections",
+   "title": "Notion Docs: Public connections",
+   "quote": "When you create a public connection, you also choose its installation scope — either Any workspace (Marketplace-eligible) or Selected workspaces only (not Marketplace-eligible).",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "nt-eligible",
+   "claim": "Only Any-workspace public connections can be listed on the Marketplace",
+   "url": "https://developers.notion.com/guides/get-started/marketplace-listing",
+   "title": "Notion Docs: List on the Marketplace",
+   "quote": "This guide covers how to: Start a new Marketplace listing Submit your listing for review Understand the review process and timeline Only public connections with an installation scope of Any workspace can be listed on the Marketplace.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "cap-email",
+   "claim": "Read user emails: A checkbox on the connection's capabilities",
+   "url": "https://developers.notion.com/guides/get-started/authorization",
+   "title": "Notion Docs: Authorization",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/notion",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://mcp.notion.com/authorize · PKCE: S256 · dynamic client registration endpoint advertised · 2 scopes advertised",
+   "url": "https://mcp.notion.com/.well-known/oauth-authorization-server",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://mcp.notion.com/authorize · PKCE: S256 · dynamic client registration endpoint advertised · 2 scopes advertised",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Authorize endpoint (fake client): HTTP 302 → app.notion.com/install-integration — redirects an unknown client to a sign-in/error page",
+   "url": "https://api.notion.com/v1/oauth/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 302 → app.notion.com/install-integration — redirects an unknown client to a sign-in/error page",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Composio-managed Notion auth works for any workspace today.",
+   "Your own public connection is live the minute you create it. No review gates usage."
+  ],
+  "rejections": [
+   "Marketplace: connection created with 'Selected workspaces only', which can't be listed and can't be changed"
+  ],
+  "blockers": [
+   {
+    "problem": "API returns object_not_found for pages the user can see",
+    "fix": "Notion only exposes pages the user picked during OAuth. Send them back through the page picker, or have them add the connection to the page."
+   },
+   {
+    "problem": "Token exchange fails with redirect_uri errors",
+    "fix": "With several redirect URIs registered, include redirect_uri in the token request exactly as registered."
+   }
+  ],
+  "uncertain": [
+   "Notion doesn't publish how long Marketplace review takes.",
+   "The required organization fields come from third-party guides; Notion's current docs don't list them."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/notion",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://mcp.notion.com/.well-known/oauth-authorization-server",
+   "result": "Discovery document found. authorize: https://mcp.notion.com/authorize · PKCE: S256 · dynamic client registration endpoint advertised · 2 scopes advertised",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://api.notion.com/v1/oauth/authorize",
+   "result": "HTTP 302 → app.notion.com/install-integration — redirects an unknown client to a sign-in/error page",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

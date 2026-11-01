@@ -59,11 +59,33 @@ details > summary::-webkit-details-marker { display: none; }
 details[open] > summary .chev { transform: rotate(90deg); }
 .chev { transition: transform .15s; display: inline-block; }
 
+/* v3: chips, segmented toggles, fact refs, glossary */
+.chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--color-rule); padding: 5px 9px; font-size: 13px; color: var(--color-ink-3); text-align: left; transition: border-color .15s, color .15s, background-color .15s; }
+.chip:hover { border-color: var(--color-ink-2); color: var(--color-ink-2); }
+.chip-on { border-color: var(--color-ink); background: var(--color-surface); color: var(--color-ink); }
+.box { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--color-ink-3); transition: background-color .15s; }
+.box-on { border-color: var(--color-ink); background: var(--color-ink); }
+.seg { display: inline-flex; border: 1px solid var(--color-ink); }
+.seg button { padding: 4px 10px; font-size: 13px; white-space: nowrap; color: var(--color-ink-2); transition: background-color .15s, color .15s; }
+.seg button + button { border-left: 1px solid var(--color-ink); }
+.seg button:hover { background: var(--color-shade); }
+.seg .seg-on { background: var(--color-ink); color: #fff; }
+.seg .seg-on:hover { background: var(--color-ink-2); }
+.factref { display: inline-flex; padding: 2px; border-radius: 99px; }
+.factref:hover { outline: 1px solid var(--color-ink); }
+.term-word { border-bottom: 1px dotted currentColor; cursor: help; font: inherit; color: inherit; padding: 0; background: none; }
+.tip { position: absolute; left: 0; top: calc(100% + 6px); z-index: 40; width: min(300px, 80vw); background: var(--color-ink); color: #fff; font-size: 12.5px; line-height: 1.45; font-weight: 400; letter-spacing: 0; padding: 8px 10px; font-style: normal; text-transform: none; }
+.rw-bar { transition: left .26s cubic-bezier(.2,.8,.2,1), width .26s cubic-bezier(.2,.8,.2,1), top .26s cubic-bezier(.2,.8,.2,1); }
+.rw-tick { transition: left .26s cubic-bezier(.2,.8,.2,1); }
+@keyframes lane-in { from { opacity: 0; transform: translateX(-6px) } to { opacity: 1; transform: none } }
+.tick-in { animation: lane-in .24s ease-out both; }
+
 .md strong { font-weight: 600; color: var(--color-ink); }
 .md code { font-family: var(--font-mono); font-size: 0.86em; background: var(--color-shade); padding: 0 4px; border-radius: 2px; word-break: break-all; }
 
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skel, .blink, .fill-in, .flap { animation: none; }
+  .skel, .blink, .fill-in, .flap, .tick-in { animation: none; }
+  .rw-bar, .rw-tick, .chip, .box, .seg button { transition: none; }
 }

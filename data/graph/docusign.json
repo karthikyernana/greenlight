@@ -1,0 +1,453 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "docusign",
+ "name": "Docusign",
+ "domain": "docusign.com",
+ "category": "Documents & e-signature",
+ "console": "https://developers.docusign.com",
+ "appType": "Integration key (Apps & Keys / Developer Console)",
+ "summary": "Building is free in the developer sandbox; going live needs a paid production Docusign account. The old 20-API-call rule is gone: Go-Live runs automatic checks and eligible apps are promoted instantly. Public apps need the Partner Program. Composio has no managed Docusign app.",
+ "composio": {
+  "managed": "not_available",
+  "slug": "docusign",
+  "note": "Composio lists this toolkit but you must bring your own OAuth app.",
+  "facts": []
+ },
+ "capabilities": [
+  {
+   "id": "sandbox",
+   "label": "Send test envelopes (sandbox)",
+   "keywords": [
+    "send",
+    "test",
+    "envelopes",
+    "sandbox"
+   ],
+   "scopes": [
+    {
+     "name": "signature",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "extended",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Free developer account; envelopes aren't legally binding",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-sandbox"
+   ]
+  },
+  {
+   "id": "live",
+   "label": "Send real envelopes for your company's users",
+   "keywords": [
+    "send",
+    "real",
+    "envelopes",
+    "your",
+    "company",
+    "users"
+   ],
+   "scopes": [
+    {
+     "name": "signature",
+     "tier": "paid",
+     "facts": []
+    },
+    {
+     "name": "extended",
+     "tier": "paid",
+     "facts": []
+    }
+   ],
+   "tier": "paid",
+   "why": "Go-Live needs a paid production account; promotion is often automatic",
+   "default": true,
+   "gates": [
+    "gate-1"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-live"
+   ]
+  },
+  {
+   "id": "public",
+   "label": "Public app for other Docusign customers",
+   "keywords": [
+    "public",
+    "other",
+    "docusign",
+    "customers"
+   ],
+   "scopes": [
+    {
+     "name": "signature",
+     "tier": "partner",
+     "facts": []
+    },
+    {
+     "name": "extended",
+     "tier": "partner",
+     "facts": []
+    }
+   ],
+   "tier": "partner",
+   "why": "The 'Public integration' classification requires joining the Partner Program",
+   "default": false,
+   "gates": [
+    "gate-2"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-public"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "gate-1",
+   "kind": "payment",
+   "label": "Re-enter secrets and redirect URIs in production",
+   "plain": "",
+   "steps": [
+    "prodacct",
+    "classify",
+    "golive",
+    "after"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  },
+  {
+   "id": "gate-2",
+   "kind": "partner_program",
+   "label": "Re-enter secrets and redirect URIs in production",
+   "plain": "",
+   "steps": [
+    "prodacct",
+    "classify",
+    "partner",
+    "golive",
+    "after"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "devacct",
+   "title": "Create a free developer account",
+   "detail": "Sandbox at account-d.docusign.com, API base demo.docusign.net.",
+   "owner": "you",
+   "agent": "",
+   "human": "Sign up",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "ik",
+   "title": "Create the integration key",
+   "detail": "Apps & Keys → Add app: Authorization Code Grant, secret, redirect URI (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback).",
+   "owner": "both",
+   "agent": "Prepare the settings and test consent in the sandbox",
+   "human": "Create it while signed in",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "build",
+   "title": "Build against the sandbox the production way",
+   "detail": "Read each user's `base_uri` from /oauth/userinfo once and cache it; production hosts differ per data centre. Use webhooks, not polling.",
+   "owner": "agent",
+   "agent": "Implement OAuth, base_uri discovery and Connect webhooks",
+   "human": "",
+   "effortMin": 240,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "prodacct",
+   "title": "Get a paid production account with admin access",
+   "detail": "Trial plans aren't eligible. ISV partners can apply for a free management account.",
+   "owner": "you",
+   "agent": "",
+   "human": "Buy or pick a supported plan; make sure you're an admin",
+   "effortMin": 20,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "cost": "Paid Docusign plan",
+   "facts": []
+  },
+  {
+   "id": "classify",
+   "title": "Choose the integration classification",
+   "detail": "Private custom, third-party key, public (Partner Program) or embedded (ISV Embed licence). It also decides how envelopes are billed.",
+   "owner": "both",
+   "agent": "Recommend the classification from your business model",
+   "human": "Confirm it",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "partner",
+   "title": "Join the Docusign Partner Program",
+   "detail": "Required for a public integration that other companies authorize with their own accounts.",
+   "owner": "you",
+   "agent": "",
+   "human": "Apply as the company",
+   "effortMin": 60,
+   "wait": [
+    7,
+    30
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-partner"
+   ]
+  },
+  {
+   "id": "golive",
+   "title": "Run Go-Live",
+   "detail": "Pick the production account. Eligible apps go live instantly; others go to Pending approval. \"Verification required\" means the account admin must verify their identity once.",
+   "owner": "both",
+   "agent": "Pre-check eligibility and draft the review notes",
+   "human": "Start Go-Live and complete identity verification",
+   "effortMin": 15,
+   "wait": [
+    0,
+    5
+   ],
+   "dependsOn": [
+    "prodacct",
+    "classify"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-golive"
+   ]
+  },
+  {
+   "id": "after",
+   "title": "Re-enter secrets and redirect URIs in production",
+   "detail": "The key is copied to production, but secrets and redirect URIs are not.",
+   "owner": "agent",
+   "agent": "Script the production config and switch base URIs",
+   "human": "",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [
+    "golive"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": []
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "cap-sandbox",
+   "claim": "Send test envelopes (sandbox): Free developer account; envelopes aren't legally binding",
+   "url": "https://developers.docusign.com/docs/esign-rest-api/go-live/",
+   "title": "Docusign: eSignature Go-Live",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-live",
+   "claim": "Send real envelopes for your company's users: Go-Live needs a paid production account; promotion is often automatic",
+   "url": "https://developers.docusign.com/docs/esign-rest-api/go-live/",
+   "title": "Docusign: eSignature Go-Live",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-public",
+   "claim": "Public app for other Docusign customers: The 'Public integration' classification requires joining the Partner Program",
+   "url": "https://developers.docusign.com/docs/esign-rest-api/go-live/",
+   "title": "Docusign: eSignature Go-Live",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-partner",
+   "claim": "Join the Docusign Partner Program: 7–30 days provider-side",
+   "url": "https://developers.docusign.com/docs/esign-rest-api/go-live/",
+   "title": "Docusign: eSignature Go-Live",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Our estimate: the provider doesn't publish this wait"
+  },
+  {
+   "id": "wait-golive",
+   "claim": "Run Go-Live: 0–5 days provider-side",
+   "url": "https://developers.docusign.com/docs/esign-rest-api/go-live/",
+   "title": "Docusign: eSignature Go-Live",
+   "quote": "",
+   "checked": "2026-11-01",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "url": "https://docs.composio.dev/toolkits/docusign",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://account.docusign.com/oauth/auth · 40 scopes advertised",
+   "url": "https://account.docusign.com/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://account.docusign.com/oauth/auth · 40 scopes advertised",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Developer portal reachability: Reachable: https://developers.docusign.com/",
+   "url": "https://developers.docusign.com",
+   "title": "Developer portal reachability",
+   "quote": "Reachable: https://developers.docusign.com/",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "probe-4",
+   "claim": "Authorize endpoint (fake client): HTTP 200 — endpoint is live",
+   "url": "https://account-d.docusign.com/oauth/auth",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 200 — endpoint is live",
+   "checked": "2026-11-01",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Composio can't host this one: bring your own integration key.",
+   "If you already have a paid Docusign account, Go-Live can be same-day."
+  ],
+  "rejections": [
+   "Trying to go live from a trial plan",
+   "Admin identity verification not completed (status: Declined, Verification required)",
+   "Wrong classification for the business model",
+   "API rule or resource-limit violations such as polling"
+  ],
+  "blockers": [
+   {
+    "problem": "Production calls fail right after Go-Live",
+    "fix": "Secrets and redirect URIs aren't copied with the key. Add them in production and use the account's base_uri."
+   },
+   {
+    "problem": "Status: Declined, Verification required",
+    "fix": "The production account admin completes the one-time identity verification, then re-select the Go-Live account."
+   }
+  ],
+  "uncertain": [
+   "Docusign doesn't say which integrations are auto-promoted vs reviewed, or how long a manual review takes (0–5 days is our estimate).",
+   "Partner Program approval time isn't published."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/docusign",
+   "result": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://account.docusign.com/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://account.docusign.com/oauth/auth · 40 scopes advertised",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "Developer portal reachability",
+   "url": "https://developers.docusign.com",
+   "result": "Reachable: https://developers.docusign.com/",
+   "ok": true,
+   "at": "2026-11-01"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://account-d.docusign.com/oauth/auth",
+   "result": "HTTP 200 — endpoint is live",
+   "ok": true,
+   "at": "2026-11-01"
+  }
+ ],
+ "checks": [
+  {
+   "claim": "Go-Live requires 20 successful API calls in the sandbox",
+   "status": "corrected",
+   "note": "Docusign removed the 20-call requirement in Oct 2025. The current Go-Live page lists only OAuth, a paid production account and admin/developer access, with automatic promotion for eligible apps.",
+   "url": "https://community.docusign.com/go-live-70/no-more-20-api-calls-introducing-the-streamlined-integration-go-live-experience-in-apps-keys-25623",
+   "at": "2026-11-01"
+  }
+ ],
+ "origin": "generated",
+ "verifiedAt": "2026-11-01",
+ "model": "batch v2: offline research agent (Hark) from cited pages, same schema; not yet human-reviewed"
+}

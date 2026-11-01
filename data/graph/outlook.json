@@ -1,0 +1,486 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "outlook",
+ "name": "Microsoft Outlook (Graph)",
+ "domain": "microsoft.com",
+ "category": "Email & calendar",
+ "console": "https://entra.microsoft.com",
+ "appType": "Multitenant app registration (Microsoft Entra ID)",
+ "summary": "Registering the app takes minutes. Trust is the gate: without publisher verification, users in other tenants often can't consent, and many orgs require an admin to approve mail scopes regardless.",
+ "composio": {
+  "managed": "available",
+  "slug": "outlook",
+  "note": "Composio-managed works. Org tenants may still show “Needs admin approval”, which is a tenant policy and not something Composio controls.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "signin",
+   "label": "Sign in (work & personal accounts)",
+   "keywords": [
+    "sign in",
+    "login",
+    "profile"
+   ],
+   "scopes": [
+    {
+     "name": "openid",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "profile",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "email",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "offline_access",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "User.Read",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Basic sign-in and profile are exempt from the unverified-publisher consent block",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-signin"
+   ]
+  },
+  {
+   "id": "read",
+   "label": "Read mail & calendar",
+   "keywords": [
+    "read",
+    "triage",
+    "inbox",
+    "calendar",
+    "summari",
+    "search"
+   ],
+   "scopes": [
+    {
+     "name": "Mail.Read",
+     "tier": "sensitive",
+     "facts": []
+    },
+    {
+     "name": "Calendars.Read",
+     "tier": "sensitive",
+     "facts": []
+    }
+   ],
+   "tier": "sensitive",
+   "why": "Users outside your tenant can't consent to an unverified multitenant app. Admins may also require approval",
+   "default": true,
+   "gates": [
+    "publisher"
+   ],
+   "steps": [],
+   "facts": [
+    "ms-nov2020"
+   ]
+  },
+  {
+   "id": "send",
+   "label": "Send mail as the user",
+   "keywords": [
+    "send",
+    "reply",
+    "draft",
+    "compose"
+   ],
+   "scopes": [
+    {
+     "name": "Mail.Send",
+     "tier": "sensitive",
+     "facts": []
+    }
+   ],
+   "tier": "sensitive",
+   "why": "Same publisher-verification gate. Often admin-restricted",
+   "default": false,
+   "gates": [
+    "publisher"
+   ],
+   "steps": [],
+   "facts": [
+    "ms-nov2020"
+   ]
+  },
+  {
+   "id": "app",
+   "label": "Org-wide access with no user present",
+   "keywords": [
+    "org-wide",
+    "all mailboxes",
+    "background",
+    "daemon",
+    "no user present"
+   ],
+   "scopes": [
+    {
+     "name": "Mail.Read (application)",
+     "tier": "restricted",
+     "facts": []
+    }
+   ],
+   "tier": "restricted",
+   "why": "Application permissions always need tenant admin consent",
+   "default": false,
+   "gates": [
+    "publisher",
+    "admin"
+   ],
+   "steps": [],
+   "facts": [
+    "ms-admin"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "publisher",
+   "kind": "publisher_verification",
+   "label": "Publisher verification",
+   "plain": "Microsoft confirms your company is real before other organisations' users can consent.",
+   "steps": [
+    "domain",
+    "partner",
+    "verify"
+   ],
+   "skip": [
+    {
+     "when": {
+      "audience": "team"
+     },
+     "reason": "Users in your own tenant aren't blocked by the unverified-publisher rule",
+     "facts": [
+      "ms-other-tenants"
+     ]
+    }
+   ],
+   "needsBusiness": true,
+   "facts": [
+    "ms-nov2020",
+    "ms-cpp",
+    "ms-partnerid"
+   ]
+  },
+  {
+   "id": "admin",
+   "kind": "admin_approval",
+   "label": "Tenant admin consent",
+   "plain": "Each customer's IT admin has to approve org-wide access.",
+   "steps": [
+    "admin"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": [
+    "ms-admin"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "id": "tenant",
+   "title": "Use a work (Entra) account, not a personal one",
+   "detail": "Apps registered under a personal Microsoft account can't be publisher-verified.",
+   "owner": "you",
+   "agent": "",
+   "human": "Create or choose an Entra tenant for your company",
+   "effortMin": 20,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "register",
+   "title": "Register a multitenant app",
+   "detail": "Entra admin center → App registrations → New. Supported account types: any org directory (+ personal accounts if needed). Add the redirect URI (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback).",
+   "owner": "both",
+   "agent": "Fill in the registration and add delegated Graph permissions",
+   "human": "Create it while signed in; store the client secret",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://entra.microsoft.com",
+   "facts": []
+  },
+  {
+   "id": "domain",
+   "title": "Verify your publisher domain (DNS)",
+   "detail": "Add a DNS-verified custom domain to the tenant or set the publisher domain. You need it before you can verify as a publisher.",
+   "owner": "both",
+   "agent": "Generate the DNS TXT record and check propagation",
+   "human": "Add the record at your DNS provider",
+   "effortMin": 20,
+   "wait": [
+    0,
+    1
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-domain"
+   ]
+  },
+  {
+   "id": "partner",
+   "title": "Enroll in the Microsoft AI Cloud Partner Program",
+   "detail": "Partner Center creates a Partner One ID (formerly MPN ID) and verifies your business: legal entity, address and an email on your domain.",
+   "owner": "you",
+   "agent": "Pre-fill the enrollment details; track verification email",
+   "human": "Provide legal entity details and approve the verification email",
+   "effortMin": 45,
+   "wait": [
+    1,
+    10
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "ms-cpp"
+   ]
+  },
+  {
+   "id": "verify",
+   "title": "Mark the app as publisher verified",
+   "detail": "App registration → Branding & properties → Add Partner ID. The user needs the right roles in both Entra and Partner Center.",
+   "owner": "both",
+   "agent": "Check the role requirements first",
+   "human": "Enter the Partner One ID and click Verify",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [
+    "partner",
+    "domain"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "ms-partnerid"
+   ]
+  },
+  {
+   "id": "admin",
+   "title": "Get tenant admin consent where required",
+   "detail": "Application permissions, and tenants that block user consent, need an admin to grant consent through the admin-consent URL.",
+   "owner": "you",
+   "agent": "Generate the admin-consent URL and a one-page explainer for IT",
+   "human": "Send it to the customer's admin",
+   "effortMin": 15,
+   "wait": [
+    1,
+    14
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "ms-admin"
+   ]
+  }
+ ],
+ "alternatives": [
+  {
+   "id": "delegated-not-app",
+   "replace": [
+    "app"
+   ],
+   "with": [
+    "read"
+   ],
+   "label": "Use delegated Mail.Read (acts as the signed-in user) instead of application permissions",
+   "tradeoff": "The agent only sees mailboxes of users who connected, not the whole org.",
+   "facts": [
+    "ms-admin"
+   ]
+  }
+ ],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio runs a managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/outlook",
+   "title": "Composio: Outlook toolkit FAQ",
+   "quote": "scheduling, enabling users to manage communications and events in a unified workspace Copy page Authentication Details Composio-managed OAuth available OAuth2 S2S_OAUTH2 Frequently Asked Questions How do I set up custom OAuth credentials for Microsoft (Outlook)?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "ms-nov2020",
+   "claim": "Users in other tenants can't consent to unverified multitenant apps asking for more than sign-in",
+   "url": "https://learn.microsoft.com/en-us/entra/identity-platform/publisher-verification-overview",
+   "title": "Microsoft Learn: Publisher verification overview",
+   "quote": "Note Beginning November 2020, if risk-based step-up consent is enabled, users can't consent to most newly registered multitenant apps that aren't publisher verified.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "ms-other-tenants",
+   "claim": "The block applies only to users in tenants other than the one where the app is registered",
+   "url": "https://learn.microsoft.com/en-us/entra/identity-platform/publisher-verification-overview",
+   "title": "Microsoft Learn: Publisher verification overview",
+   "quote": "The policy applies to apps that were registered after November 8, 2020, which use OAuth 2.0 to request permissions that extend beyond the basic sign-in and read user profile, and which request consent from users in tenants that aren't the tenant where the app is registered.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "ms-cpp",
+   "claim": "Publisher verification needs a verified Microsoft AI Cloud Partner Program account",
+   "url": "https://learn.microsoft.com/en-us/entra/identity-platform/publisher-verification-overview",
+   "title": "Microsoft Learn: Publisher verification overview",
+   "quote": "Verifying an app includes using a Microsoft AI Cloud Partner Program (CPP), formerly known as Microsoft Partner Network (MPN), account that's been verified and associating the verified PartnerID with an app registration.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "ms-partnerid",
+   "claim": "You verify by entering your Partner One ID on the app registration",
+   "url": "https://learn.microsoft.com/en-us/entra/identity-platform/mark-app-as-publisher-verified",
+   "title": "Microsoft Learn: Mark an app as publisher verified",
+   "quote": "Enter your Partner One ID and select Verify and save .",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "ms-admin",
+   "claim": "Application permissions need tenant-wide admin consent",
+   "url": "https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/grant-admin-consent",
+   "title": "Microsoft Learn: Grant tenant-wide admin consent",
+   "quote": "Cloud Application Administrator, AI Administrator, or Application Administrator, for granting consent for apps requesting any permission for any API, except Microsoft Graph app roles (application permissions).",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "cap-signin",
+   "claim": "Sign in (work & personal accounts): Basic sign-in and profile are exempt from the unverified-publisher consent block",
+   "url": "https://learn.microsoft.com/en-us/entra/identity-platform/publisher-verification-overview",
+   "title": "Microsoft Learn: Publisher verification overview",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-domain",
+   "claim": "Verify your publisher domain (DNS): 0–1 days provider-side",
+   "url": "https://github.com/MicrosoftDocs/entra-docs/blob/cd4a283704560f4a5ceee11d7915083aefc06cc5/docs/identity-platform/howto-configure-publisher-domain.md",
+   "title": "Microsoft Docs: Configure publisher domain",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/outlook",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://login.microsoftonline.com/common/oauth2/v2.0/authorize · 4 scopes advertised",
+   "url": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://login.microsoftonline.com/common/oauth2/v2.0/authorize · 4 scopes advertised",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Authorize endpoint (fake client): HTTP 200 — endpoint is live",
+   "url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 200 — endpoint is live",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Composio-managed Outlook works today for many consumer and business accounts.",
+   "Start Partner Program enrollment now: business verification is the long pole and runs in parallel with your build.",
+   "Ship sign-in plus User.Read first. Those scopes are exempt from the unverified-publisher block."
+  ],
+  "rejections": [
+   "Publisher verification fails: the Partner One ID is a location ID, not the CPP account ID",
+   "The signed-in user lacks roles in Entra or Partner Center",
+   "App registered under a personal Microsoft account"
+  ],
+  "blockers": [
+   {
+    "problem": "“Need admin approval” on the consent screen",
+    "fix": "The tenant blocks user consent or the app is unverified. Finish publisher verification and send the customer's admin your admin-consent URL."
+   },
+   {
+    "problem": "AADSTS errors about unverified publisher",
+    "fix": "Multitenant apps registered after Nov 2020 that request more than basic scopes need a verified publisher before users in other tenants can consent."
+   }
+  ],
+  "uncertain": [
+   "Microsoft doesn't publish how long Partner Center business verification takes. The 1–10 day range is our estimate.",
+   "Whether a given customer tenant needs admin consent depends on that tenant's own policy."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/outlook",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://login.microsoftonline.com/common/oauth2/v2.0/authorize · 4 scopes advertised",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+   "result": "HTTP 200 — endpoint is live",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

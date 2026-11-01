@@ -1,6 +1,6 @@
-import { libraryIndex } from "@/lib/library";
+import { libraryIndex, intentIndex } from "@/lib/library";
 import Board from "@/components/Board";
 
 export default function Home() {
-  return <Board index={libraryIndex()} />;
+  return <Board index={libraryIndex()} intents={intentIndex()} />;
 }

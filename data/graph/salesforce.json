@@ -1,0 +1,341 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "salesforce",
+ "name": "Salesforce",
+ "domain": "salesforce.com",
+ "category": "CRM",
+ "console": "https://developer.salesforce.com/signup",
+ "appType": "External Client App (ECA)",
+ "summary": "Changed in 2026: since Spring '26 you can't create new Connected Apps (unless Support enables it). Build an External Client App instead. Selling through AppExchange adds a paid security review that takes weeks.",
+ "composio": {
+  "managed": "available",
+  "slug": "salesforce",
+  "note": "Composio-managed works for connecting customer orgs. Some customer admins restrict uninstalled apps, which blocks any app, managed or yours.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "api",
+   "label": "Read & write CRM data via API",
+   "keywords": [
+    "crm",
+    "read",
+    "write",
+    "record",
+    "opportunit",
+    "account",
+    "lead",
+    "api"
+   ],
+   "scopes": [
+    {
+     "name": "api",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "refresh_token",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Create an ECA in your Developer Edition org. Customer orgs can authorize it",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "sf-connected"
+   ]
+  },
+  {
+   "id": "appexchange",
+   "label": "Listed on AppExchange / ISV distribution",
+   "keywords": [
+    "appexchange",
+    "listed",
+    "isv",
+    "distribute"
+   ],
+   "scopes": [],
+   "tier": "restricted",
+   "why": "Partner Program, packaging, and a paid security review",
+   "default": false,
+   "gates": [
+    "secreview"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-appexchange"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "secreview",
+   "kind": "security_assessment",
+   "label": "AppExchange security review",
+   "plain": "Salesforce's security team tests your app before listing. Paid.",
+   "steps": [
+    "partner",
+    "package",
+    "review"
+   ],
+   "skip": [],
+   "needsBusiness": true,
+   "facts": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "org",
+   "title": "Get a free Developer Edition org",
+   "detail": "Your ECA lives here.",
+   "owner": "you",
+   "agent": "",
+   "human": "Sign up and verify your email",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://developer.salesforce.com/signup",
+   "facts": []
+  },
+  {
+   "id": "eca",
+   "title": "Create an External Client App",
+   "detail": "Setup → External Client App Manager → New. Enable OAuth, the scopes (api, refresh_token) and the callback URL (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback). Connected Apps can't be created by default since Spring '26.",
+   "owner": "both",
+   "agent": "Prepare the settings and policies (PKCE on, refresh token policy)",
+   "human": "Create it in Setup and copy the consumer key and secret",
+   "effortMin": 20,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": [
+    "sf-connected"
+   ]
+  },
+  {
+   "id": "policies",
+   "title": "Plan for 2026 OAuth security changes",
+   "detail": "Refresh-token idle TTL is capped at 30 days (production from Nov 4, 2026). Username-password and user-agent flows retire Feb 20, 2027.",
+   "owner": "agent",
+   "agent": "Use the web-server flow with PKCE and refresh proactively",
+   "human": "",
+   "effortMin": 30,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "partner",
+   "title": "Join the Salesforce Partner Program (AppExchange)",
+   "detail": "Needed to package and list your app.",
+   "owner": "you",
+   "agent": "",
+   "human": "Enroll your company and accept the agreements",
+   "effortMin": 60,
+   "wait": [
+    1,
+    7
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-partner"
+   ]
+  },
+  {
+   "id": "package",
+   "title": "Package the ECA in a 2GP managed package",
+   "detail": "AppExchange guidance requires ECAs for new integrations, packaged for distribution.",
+   "owner": "agent",
+   "agent": "Set up the packaging and the scanner runs",
+   "human": "",
+   "effortMin": 480,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [
+    "partner"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "review",
+   "title": "AppExchange security review",
+   "detail": "Salesforce's Product Security team tests the solution and your external endpoints. A failed review means fix and resubmit.",
+   "owner": "both",
+   "agent": "Run Code Analyzer/Checkmarx and DAST scans; write the false-positive docs",
+   "human": "Pay the review fee and submit",
+   "effortMin": 960,
+   "wait": [
+    28,
+    70
+   ],
+   "dependsOn": [
+    "package"
+   ],
+   "base": false,
+   "skip": [],
+   "cost": "Security review fee (paid; check current Partner pricing)",
+   "facts": [
+    "wait-review"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio runs a managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/salesforce",
+   "title": "Composio: Salesforce toolkit",
+   "quote": "ce, marketing, and analytics to build customer relationships and drive business growth Copy page Authentication Details Composio-managed OAuth available OAuth2 S2S_OAUTH2 Frequently Asked Questions How do I set up custom OAuth credentials for Salesforce?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "sf-connected",
+   "claim": "Spring '26 restricts creating new Connected Apps; External Client Apps replace them",
+   "url": "https://www.salesforce.com/blog/spring-26-release-architect-highlights",
+   "title": "Salesforce: Spring '26 architect highlights",
+   "quote": "26 Release Architect Highlights: Security, Stability, and Agents The Spring ’26 Release enhances Salesforce security by restricting Connected Apps creation and by eliminating legacy authentication.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "cap-appexchange",
+   "claim": "Listed on AppExchange / ISV distribution: Partner Program, packaging, and a paid security review",
+   "url": "https://help.salesforce.com/s/articleView?id=005318040&language=en_US&type=1",
+   "title": "Salesforce Help: CA/ECA AppExchange security review guidance",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-partner",
+   "claim": "Join the Salesforce Partner Program (AppExchange): 1–7 days provider-side",
+   "url": "https://developer.salesforce.com/docs/atlas.en-us.packagingGuide.meta/packagingGuide/appexchange_security_review_overview.htm",
+   "title": "ISVforce Guide: AppExchange security review",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-review",
+   "claim": "AppExchange security review: 28–70 days provider-side",
+   "url": "https://developer.salesforce.com/docs/atlas.en-us.packagingGuide.meta/packagingGuide/appexchange_security_review_overview.htm",
+   "title": "ISVforce Guide: AppExchange security review",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/salesforce",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://login.salesforce.com/services/oauth2/authorize · PKCE: S256 · dynamic client registration endpoint advertised · 39 scopes advertised",
+   "url": "https://login.salesforce.com/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://login.salesforce.com/services/oauth2/authorize · PKCE: S256 · dynamic client registration endpoint advertised · 39 scopes advertised",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Authorize endpoint (fake client): HTTP 400 — rejects unknown client: “invalid_client_id&error_description=client%20identifier%20invalid error=invalid_client_id&erro”",
+   "url": "https://login.salesforce.com/services/oauth2/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 400 — rejects unknown client: “invalid_client_id&error_description=client%20identifier%20invalid error=invalid_client_id&erro”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Use Composio-managed Salesforce to connect customer orgs today.",
+   "Or create your own ECA in a Developer org today. Customer orgs can authorize it straight away (subject to their admin policies)."
+  ],
+  "rejections": [
+   "Security review: scanner findings with no false-positive documentation",
+   "Insecure external endpoints (TLS, auth) found by DAST",
+   "Using legacy flows (username-password) that are being retired"
+  ],
+  "blockers": [
+   {
+    "problem": "“New Connected App” is missing or blocked",
+    "fix": "Expected since Spring '26. Create an External Client App, or ask Salesforce Support to enable Connected App creation."
+   },
+   {
+    "problem": "OAUTH_APPROVAL_ERROR_GENERIC / app blocked in the customer org",
+    "fix": "The customer's admin restricts uninstalled apps. They need to install or allow your app, or approve it under Connected Apps OAuth Usage."
+   },
+   {
+    "problem": "Customers get logged out after a month",
+    "fix": "Refresh tokens now expire after 30 days idle. Refresh on a schedule."
+   }
+  ],
+  "uncertain": [
+   "The current security review fee and turnaround aren't on the cited pages. Both are estimates.",
+   "Discovery advertises a dynamic client registration endpoint. Whether it's usable for third-party apps is untested."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/salesforce",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://login.salesforce.com/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://login.salesforce.com/services/oauth2/authorize · PKCE: S256 · dynamic client registration endpoint advertised · 39 scopes advertised",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://login.salesforce.com/services/oauth2/authorize",
+   "result": "HTTP 400 — rejects unknown client: “invalid_client_id&error_description=client%20identifier%20invalid error=invalid_client_id&erro”",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

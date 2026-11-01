@@ -1,0 +1,331 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "zoom",
+ "name": "Zoom",
+ "domain": "zoom.us",
+ "category": "Meetings",
+ "console": "https://marketplace.zoom.us/develop/create",
+ "appType": "General app (OAuth), user- or admin-managed",
+ "summary": "An unpublished General app works only for users in your own Zoom account. To let other accounts connect, the app has to pass Marketplace review (functional, then security), or get approval to share a beta link, which needs SAST/DAST evidence. Expect weeks, and few apps pass on the first try.",
+ "composio": {
+  "managed": "available",
+  "slug": "zoom",
+  "note": "Composio provides a managed OAuth app, so you can ship without registering your own. Bring your own app for your brand on the consent screen, custom scopes, or your own rate limits.",
+  "facts": []
+ },
+ "capabilities": [
+  {
+   "id": "own",
+   "label": "Your own account's meetings & recordings",
+   "keywords": [
+    "your",
+    "account",
+    "meetings",
+    "recordings"
+   ],
+   "scopes": [
+    {
+     "name": "meeting:read:list_meetings",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "cloud_recording:read:list_recording_files",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Unpublished apps work for users in your Zoom account without review",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-own"
+   ]
+  },
+  {
+   "id": "external",
+   "label": "Other companies' users connect",
+   "keywords": [
+    "other",
+    "companies",
+    "users",
+    "connect"
+   ],
+   "scopes": [
+    {
+     "name": "meeting:read:list_meetings",
+     "tier": "restricted",
+     "facts": []
+    },
+    {
+     "name": "meeting:read:summary",
+     "tier": "restricted",
+     "facts": []
+    }
+   ],
+   "tier": "restricted",
+   "why": "Marketplace review: functional + security review; scopes are justified individually",
+   "default": true,
+   "gates": [
+    "gate-1"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-external"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "gate-1",
+   "kind": "security_assessment",
+   "label": "Submit for review",
+   "plain": "",
+   "steps": [
+    "domains",
+    "secdocs",
+    "submit"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "create",
+   "title": "Create a General app",
+   "detail": "Marketplace → Develop → Build App → General app. Choose user-managed (each user authorizes) or admin-managed (account-wide).",
+   "owner": "both",
+   "agent": "Recommend user- vs admin-managed from your scopes",
+   "human": "Create it while signed in to the Zoom developer account",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://marketplace.zoom.us/develop/create",
+   "facts": []
+  },
+  {
+   "id": "scopes",
+   "title": "Add scopes with a justification for each",
+   "detail": "Each scope is a request to Zoom's Security Review team, which rejects anything that isn't needed. Add the OAuth redirect URL (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback) and allow-list it.",
+   "owner": "agent",
+   "agent": "Choose the minimal granular scopes and write a justification for each",
+   "human": "",
+   "effortMin": 30,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "domains",
+   "title": "Verify your domains",
+   "detail": "Privacy policy, terms, redirect, webhook and home URLs must all be on domains you verify in the build flow.",
+   "owner": "both",
+   "agent": "Produce the verification records",
+   "human": "Add them at your DNS/host",
+   "effortMin": 20,
+   "wait": [
+    0,
+    1
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-domains"
+   ]
+  },
+  {
+   "id": "secdocs",
+   "title": "Prepare the security documentation",
+   "detail": "SSDLC doc, SAST and DAST scan output (real scanner output, not summaries), privacy policy, plus 3 of: pentest summary, security policy, incident response, vulnerability management, dependency policy. TLS 1.2+.",
+   "owner": "both",
+   "agent": "Run SAST/DAST scans and draft the policies",
+   "human": "Approve the policies and commission a pentest if needed",
+   "effortMin": 720,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "submit",
+   "title": "Submit for review (functional → security)",
+   "detail": "Give test account credentials and reviewer notes. Zoom says few apps pass on the first attempt.",
+   "owner": "both",
+   "agent": "Write the reviewer notes and test plan",
+   "human": "Submit and respond to feedback",
+   "effortMin": 60,
+   "wait": [
+    14,
+    42
+   ],
+   "dependsOn": [
+    "domains",
+    "secdocs"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-submit"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "cap-own",
+   "claim": "Your own account's meetings & recordings: Unpublished apps work for users in your Zoom account without review",
+   "url": "https://developers.zoom.us/docs/platform/key-concepts/",
+   "title": "Zoom: Key concepts (private vs published apps)",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-external",
+   "claim": "Other companies' users connect: Marketplace review: functional + security review; scopes are justified individually",
+   "url": "https://developers.zoom.us/docs/distribute/app-review-process/",
+   "title": "Zoom: App review process",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-domains",
+   "claim": "Verify your domains: 0–1 days provider-side",
+   "url": "https://developers.zoom.us/docs/build-flow/submitting-apps-for-review/",
+   "title": "Zoom: Submit apps for review (domain verification)",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-submit",
+   "claim": "Submit for review (functional → security): 14–42 days provider-side",
+   "url": "https://developers.zoom.us/docs/distribute/app-review-process/",
+   "title": "Zoom: App review process",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Our estimate: the provider doesn't publish this wait"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/zoom",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://zoom.us/oauth/authorize · PKCE: plain/S256 · 3 scopes advertised",
+   "url": "https://zoom.us/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://zoom.us/oauth/authorize · PKCE: plain/S256 · 3 scopes advertised",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Developer portal reachability: Reachable: https://developers.zoom.us/, https://docs.zoom.us/",
+   "url": "https://developers.zoom.us",
+   "title": "Developer portal reachability",
+   "quote": "Reachable: https://developers.zoom.us/, https://docs.zoom.us/",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-4",
+   "claim": "Authorize endpoint (fake client): HTTP 302 → zoom.us/oauth/signin — rejects unknown client: “Invalid client_id: greenlight-probe-000,result:null} {status:false,errorCode:4702,erro”",
+   "url": "https://zoom.us/oauth/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 302 → zoom.us/oauth/signin — rejects unknown client: “Invalid client_id: greenlight-probe-000,result:null} {status:false,errorCode:4702,erro”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Composio-managed Zoom auth lets external users connect today.",
+   "Build and dogfood inside your own Zoom account. No review needed.",
+   "Start the security pack (SAST/DAST, policies) now. It's the long pole."
+  ],
+  "rejections": [
+   "Scopes broader than the feature needs",
+   "Scan evidence submitted as written summaries, not scanner output",
+   "Redirect or webhook URLs on unverified domains",
+   "No working test account for the reviewer"
+  ],
+  "blockers": [
+   {
+    "problem": "Users from another company get an error installing",
+    "fix": "The app is unpublished. Publish it (or get beta sharing approved) through review, or use Composio-managed auth meanwhile."
+   },
+   {
+    "problem": "Account admin must approve the app",
+    "fix": "Many accounts require admin pre-approval in Marketplace settings. Send the admin your listing link."
+   }
+  ],
+  "uncertain": [
+   "Zoom doesn't publish review turnaround. 2–6 weeks is an estimate from developer reports."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/zoom",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://zoom.us/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://zoom.us/oauth/authorize · PKCE: plain/S256 · 3 scopes advertised",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Developer portal reachability",
+   "url": "https://developers.zoom.us",
+   "result": "Reachable: https://developers.zoom.us/, https://docs.zoom.us/",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://zoom.us/oauth/authorize",
+   "result": "HTTP 302 → zoom.us/oauth/signin — rejects unknown client: “Invalid client_id: greenlight-probe-000,result:null} {status:false,errorCode:4702,erro”",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "generated",
+ "verifiedAt": "2026-10-30",
+ "model": "batch: offline research agent (Hark), same schema; not yet human-reviewed"
+}

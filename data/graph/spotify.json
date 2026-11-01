@@ -1,0 +1,294 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "spotify",
+ "name": "Spotify",
+ "domain": "spotify.com",
+ "category": "Media",
+ "console": "https://developer.spotify.com/dashboard",
+ "appType": "Spotify app (Web API, OAuth 2.0)",
+ "summary": "Registering the app is instant, but Spotify has effectively closed general access: Development Mode allows 5 users per app (and the owner needs Premium), and Extended Quota is only for registered organizations with ~250k MAU. For most agents, plan to stay at 5 users.",
+ "composio": {
+  "managed": "not_available",
+  "slug": "spotify",
+  "note": "Composio lists this toolkit but you must bring your own OAuth app (client ID + secret) in a custom auth config.",
+  "facts": []
+ },
+ "capabilities": [
+  {
+   "id": "personal",
+   "label": "Read/control playback for you + 4 others",
+   "keywords": [
+    "read",
+    "control",
+    "playback",
+    "others"
+   ],
+   "scopes": [
+    {
+     "name": "user-read-playback-state",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "user-modify-playback-state",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "playlist-read-private",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Development Mode: 5 allow-listed users per app; the owner needs Premium",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-personal"
+   ]
+  },
+  {
+   "id": "public",
+   "label": "Any Spotify user can connect",
+   "keywords": [
+    "spotify",
+    "user",
+    "connect"
+   ],
+   "scopes": [],
+   "tier": "partner",
+   "why": "Extended Quota: organizations only, launched service, ~250k MAU",
+   "default": false,
+   "gates": [
+    "gate-1"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-public"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "gate-1",
+   "kind": "partner_program",
+   "label": "Apply for Extended Quota",
+   "plain": "",
+   "steps": [
+    "quota"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "premium",
+   "title": "Make sure the app owner has Spotify Premium",
+   "detail": "Since Feb/Mar 2026, Development Mode apps stop working if the owner's Premium lapses.",
+   "owner": "you",
+   "agent": "",
+   "human": "Keep Premium active on the owner account",
+   "effortMin": 5,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "create",
+   "title": "Create the app in the Developer Dashboard",
+   "detail": "Dashboard → Create app. Name and description appear on the consent screen. Add redirect URIs (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback). You can have up to 25 client IDs, which share one quota.",
+   "owner": "both",
+   "agent": "Fill in the redirect URIs and choose Web API",
+   "human": "Accept the Developer Terms and create the app",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://developer.spotify.com/dashboard",
+   "facts": []
+  },
+  {
+   "id": "allowlist",
+   "title": "Allow-list your 5 users",
+   "detail": "Add each user's Spotify email under User Management. Anyone else gets an error at sign-in.",
+   "owner": "you",
+   "agent": "Explain the limit to users in your onboarding",
+   "human": "Add the emails",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "quota",
+   "title": "Apply for Extended Quota (organizations only)",
+   "detail": "Use the form from a company email. Criteria: a legally registered business, an active launched service, about 250k MAU, and availability in key Spotify markets.",
+   "owner": "both",
+   "agent": "Draft the application and a compliance checklist against the Developer Terms",
+   "human": "Submit as the organization",
+   "effortMin": 120,
+   "wait": [
+    14,
+    60
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-quota"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "cap-personal",
+   "claim": "Read/control playback for you + 4 others: Development Mode: 5 allow-listed users per app; the owner needs Premium",
+   "url": "https://developer.spotify.com/documentation/web-api/concepts/quota-modes",
+   "title": "Spotify: Quota modes",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-public",
+   "claim": "Any Spotify user can connect: Extended Quota: organizations only, launched service, ~250k MAU",
+   "url": "https://developer.spotify.com/documentation/web-api/concepts/quota-modes",
+   "title": "Spotify: Quota modes",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-quota",
+   "claim": "Apply for Extended Quota (organizations only): 14–60 days provider-side",
+   "url": "https://developer.spotify.com/documentation/web-api/concepts/quota-modes",
+   "title": "Spotify: Quota modes",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Our estimate: the provider doesn't publish this wait"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "url": "https://docs.composio.dev/toolkits/spotify",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://accounts.spotify.com/oauth2/v2/auth · PKCE: S256 · 3 scopes advertised",
+   "url": "https://accounts.spotify.com/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://accounts.spotify.com/oauth2/v2/auth · PKCE: S256 · 3 scopes advertised",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Developer portal reachability: Reachable: https://developer.spotify.com/, https://www.spotify.com/us/developers/, https://www.spotify.com/us/docs/",
+   "url": "https://developers.spotify.com",
+   "title": "Developer portal reachability",
+   "quote": "Reachable: https://developer.spotify.com/, https://www.spotify.com/us/developers/, https://www.spotify.com/us/docs/",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-4",
+   "claim": "Authorize endpoint (fake client): HTTP 303 → accounts.spotify.com/en/login — rejects unknown client: “Error 404 - Not found,error404:Sorry, but the page you requested does not exist”",
+   "url": "https://accounts.spotify.com/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 303 → accounts.spotify.com/en/login — rejects unknown client: “Error 404 - Not found,error404:Sorry, but the page you requested does not exist”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Ship to yourself plus 4 testers in Development Mode today.",
+   "Composio has no managed Spotify app. You need your own client ID.",
+   "If you need the public, treat Spotify as partner-only and design around it."
+  ],
+  "rejections": [
+   "Applying as an individual (Extended Quota has been organizations-only since May 15, 2025)",
+   "Below the ~250k MAU bar or not yet launched",
+   "Use cases Spotify reviewers flag as not driving artist discovery or as automation risk"
+  ],
+  "blockers": [
+   {
+    "problem": "A 6th user can't log in",
+    "fix": "Development Mode caps you at 5 allow-listed users per app. There's no self-serve way around it."
+   },
+   {
+    "problem": "429 with reason QUOTA_EXCEEDED",
+    "fix": "All your Development Mode client IDs share one quota since July 2026. Cache and batch calls."
+   },
+   {
+    "problem": "App suddenly stops working",
+    "fix": "The owner's Premium subscription lapsed. Renew it."
+   }
+  ],
+  "uncertain": [
+   "Spotify doesn't publish Extended Quota review times.",
+   "The ~250k MAU threshold comes from Spotify's 2025 criteria. Agencies may be judged differently."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/spotify",
+   "result": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://accounts.spotify.com/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://accounts.spotify.com/oauth2/v2/auth · PKCE: S256 · 3 scopes advertised",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Developer portal reachability",
+   "url": "https://developers.spotify.com",
+   "result": "Reachable: https://developer.spotify.com/, https://www.spotify.com/us/developers/, https://www.spotify.com/us/docs/",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://accounts.spotify.com/authorize",
+   "result": "HTTP 303 → accounts.spotify.com/en/login — rejects unknown client: “Error 404 - Not found,error404:Sorry, but the page you requested does not exist”",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "generated",
+ "verifiedAt": "2026-10-30",
+ "model": "batch: offline research agent (Hark), same schema; not yet human-reviewed"
+}

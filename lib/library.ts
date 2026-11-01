@@ -1,65 +1,59 @@
-import { Guide, type IndexEntry } from "./types";
-import { seeds } from "@/data/seeds";
+import type { Guide, IndexEntry } from "./types";
 import toolkits from "@/data/composio-toolkits.json";
-import generatedList from "@/data/generated/index.json";
-import { worstCase, headline, gateLabel } from "./plan";
+import { GRAPHS, getGraph, graphToGuide, putGraph } from "./graph/load";
+import { plan, defaultNeed, TIER_LABEL } from "./engine";
+import { fmtDays } from "./plan";
+import type { IntentIndex } from "./intent";
+import type { ProviderGraph } from "./graph/schema";
 
-const curated: Guide[] = seeds.map((s) => Guide.parse(s));
-const generated: Guide[] = (generatedList as unknown[]).map((g) => Guide.parse(g));
-
-// Runtime cache for guides generated on this instance (also persisted in share URLs + visitor localStorage).
-const g = globalThis as unknown as { __glCache?: Map<string, Guide> };
-const cache = (g.__glCache ??= new Map<string, Guide>());
-
+/** v2-shaped guide (setup kit, OG image, JSON API). */
 export function getGuide(slug: string): Guide | undefined {
-  return curated.find((x) => x.slug === slug) || generated.find((x) => x.slug === slug) || cache.get(slug);
+  const g = getGraph(slug);
+  return g ? graphToGuide(g) : undefined;
 }
-export function putGuide(guide: Guide) {
-  cache.set(guide.slug, guide);
-}
-export function curatedGuides() {
-  return curated;
-}
+export function putGuideGraph(g: ProviderGraph) { putGraph(g); }
 
 const ALIASES: Record<string, string> = { twitter: "twitter", outlook: "outlook", gmail: "gmail" };
+
+function gateText(g: ProviderGraph): string {
+  const all = plan(g, { caps: g.capabilities.map((c) => c.id), profile: defaultNeed(g).profile }, { suggestions: false });
+  const hit = all.gatesHit.map((x) => x.gate.label);
+  return hit.length ? hit.slice(0, 2).join(", ") : all.tier === "paid" ? "Pay per call" : "None";
+}
 
 export function libraryIndex(): IndexEntry[] {
   const out: IndexEntry[] = [];
   const seen = new Set<string>();
-  for (const c of curated) {
-    const h = headline(c);
-    const w = worstCase(c);
+  for (const g of GRAPHS) {
+    const d = plan(g, defaultNeed(g), { suggestions: false });
+    const w = plan(g, { caps: g.capabilities.map((c) => c.id), profile: defaultNeed(g).profile }, { suggestions: false });
     out.push({
-      slug: c.slug, name: c.name, managed: c.composio.managed, composioSlug: c.composio.slug, category: c.category, curated: true,
-      difficulty: h.difficulty.label, wait: h.wait, maxWait: w.wait, waitDays: h.sch.daysMax, worstDays: w.sch.daysMax, gate: gateLabel(c), tags: tagsFor(c),
+      slug: g.slug, name: g.name, managed: g.composio.managed, composioSlug: g.composio.slug, category: g.category,
+      curated: g.origin === "curated", generated: g.origin === "generated",
+      difficulty: TIER_LABEL[d.tier], wait: d.wait, maxWait: fmtDays(w.days[0], w.days[1]), waitDays: d.days[1], worstDays: w.days[1], gate: gateText(g),
     });
-    seen.add(c.slug);
-    if (c.composio.slug) seen.add(c.composio.slug);
+    seen.add(g.slug);
+    if (g.composio.slug) seen.add(g.composio.slug);
   }
-  for (const c of generated) {
-    if (seen.has(c.slug)) continue;
-    const w = worstCase(c);
-    const h = headline(c);
-    out.push({ slug: c.slug, name: c.name, managed: c.composio.managed, composioSlug: c.composio.slug, category: c.category, generated: true, difficulty: h.difficulty.label, wait: h.wait, maxWait: w.wait, waitDays: h.sch.daysMax, worstDays: w.sch.daysMax, gate: gateLabel(c), tags: tagsFor(c) });
-    seen.add(c.slug);
-    if (c.composio.slug) seen.add(c.composio.slug);
-  }
-  for (const t of toolkits as { slug: string; name: string; managed: IndexEntry["managed"] }[]) {
+  for (const t of toolkits as { slug: string; name: string; managed: IndexEntry["managed"]; category?: string }[]) {
     const slug = ALIASES[t.slug] || t.slug.replace(/_/g, "-");
     if (seen.has(t.slug) || seen.has(slug)) continue;
-    out.push({ slug, name: t.name, managed: t.managed, composioSlug: t.slug, category: (t as { category?: string }).category });
+    out.push({ slug, name: t.name, managed: t.managed, composioSlug: t.slug, category: t.category });
     seen.add(slug);
   }
   return out;
 }
 
-export function tagsFor(c: Guide): string[] {
-  const tiers = new Set(c.capabilities.map((x) => x.tier));
-  const tags: string[] = [];
-  if (tiers.has("instant") || tiers.has("self_serve")) tags.push("self-serve");
-  if (tiers.has("review") || tiers.has("restricted")) tags.push("review");
-  if (tiers.has("restricted")) tags.push("security-review");
-  if (tiers.has("partner")) tags.push("partner-only");
-  if (tiers.has("paid") || c.steps.some((s) => s.cost)) tags.push("paid");
-  return tags;
+const EXTRA_ALIASES: Record<string, string[]> = { gmail: ["google mail", "gmail api"], outlook: ["microsoft 365", "office 365", "microsoft graph", "outlook mail"], twitter: ["x", "x.com", "twitter"], instagram: ["meta", "ig"], hubspot: ["hub spot"] };
+
+/** Compact index the command bar uses to read a sentence. */
+export function intentIndex(): IntentIndex[] {
+  const ready = new Map(GRAPHS.map((g) => [g.slug, g]));
+  return libraryIndex().map((e) => {
+    const g = ready.get(e.slug);
+    return {
+      slug: e.slug, name: e.name.replace(/\s*\(.*\)$/, ""), aliases: [...(EXTRA_ALIASES[e.slug] || []), ...(e.composioSlug && e.composioSlug !== e.slug ? [e.composioSlug.replace(/_/g, " ")] : [])],
+      ready: !!g, composioSlug: e.composioSlug, caps: g ? g.capabilities.map((c) => ({ id: c.id, label: c.label, keywords: c.keywords })) : [],
+    };
+  });
 }

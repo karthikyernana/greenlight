@@ -1,0 +1,383 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "slack",
+ "name": "Slack",
+ "domain": "slack.com",
+ "category": "Communication",
+ "console": "https://api.slack.com/apps",
+ "appType": "Slack app (OAuth v2)",
+ "summary": "You can distribute without review. Workspace admin policies are the real gate: strict workspaces block apps that aren't in the Marketplace, and Marketplace listing needs 10 active installs plus a review that can take weeks.",
+ "composio": {
+  "managed": "available",
+  "slug": "slack",
+  "note": "Composio-managed works today, but its app isn't in the Slack Marketplace yet, so users see a warning and strict workspaces need admin approval. Composio says a Marketplace review is in progress.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "signin",
+   "label": "Sign in with Slack",
+   "keywords": [
+    "sign in",
+    "login"
+   ],
+   "scopes": [
+    {
+     "name": "openid",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "profile",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "email",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "OpenID Connect, no review",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-signin"
+   ]
+  },
+  {
+   "id": "post",
+   "label": "Post & read messages in workspaces",
+   "keywords": [
+    "post",
+    "message",
+    "read",
+    "channel",
+    "notify",
+    "summari",
+    "reply",
+    "triage"
+   ],
+   "scopes": [
+    {
+     "name": "chat:write",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "channels:history",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "channels:read",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Activate public distribution yourself, no review. Some workspaces still need admin approval",
+   "default": true,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "sl-unlisted"
+   ]
+  },
+  {
+   "id": "marketplace",
+   "label": "Listed on Slack Marketplace (trusted install)",
+   "keywords": [
+    "marketplace",
+    "listed",
+    "directory"
+   ],
+   "scopes": [],
+   "tier": "sensitive",
+   "why": "10 active installs, then a multi-stage review",
+   "default": false,
+   "gates": [
+    "marketplace"
+   ],
+   "steps": [],
+   "facts": [
+    "sl-10",
+    "sl-review-time"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "marketplace",
+   "kind": "marketplace_listing",
+   "label": "Slack Marketplace review",
+   "plain": "10 active installs, then a two-stage review.",
+   "steps": [
+    "installs",
+    "submit"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "cap": 10,
+   "facts": [
+    "sl-10",
+    "sl-review-time"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "id": "create",
+   "title": "Create the app from a manifest",
+   "detail": "api.slack.com/apps → Create New App → From manifest. Declare bot scopes and redirect URLs (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback).",
+   "owner": "both",
+   "agent": "Write the manifest with least-privilege scopes",
+   "human": "Paste it while signed in and pick a dev workspace",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://api.slack.com/apps",
+   "facts": []
+  },
+  {
+   "id": "distribute",
+   "title": "Activate public distribution",
+   "detail": "Slack shows a checklist that has to pass before the button turns on: no hard-coded tokens, an OAuth redirect URL, and HTTPS for every URL. A single http:// redirect is enough to block it.",
+   "owner": "agent",
+   "agent": "Fix any check that fails; test install on a second workspace",
+   "human": "",
+   "effortMin": 20,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [
+    {
+     "when": {
+      "audience": "team"
+     },
+     "reason": "An app installed only in your own workspace doesn't need public distribution",
+     "facts": [
+      "sl-unlisted"
+     ]
+    }
+   ],
+   "facts": [
+    "sl-unlisted"
+   ]
+  },
+  {
+   "id": "installs",
+   "title": "Get 10 active workspace installs",
+   "detail": "Required before you can submit to the Marketplace, and the app has to stay at 10 or more for the whole review.",
+   "owner": "you",
+   "agent": "Draft the beta invite and an onboarding DM",
+   "human": "Recruit beta workspaces",
+   "effortMin": 120,
+   "wait": [
+    7,
+    30
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "sl-10"
+   ]
+  },
+  {
+   "id": "submit",
+   "title": "Submit for Marketplace review",
+   "detail": "Preliminary feedback takes up to 10 business days, then a functional review. **Every resubmission resets your place in the queue.**",
+   "owner": "both",
+   "agent": "Pre-check against the guidelines; write the privacy policy, support page and test instructions",
+   "human": "Submit and respond to feedback",
+   "effortMin": 240,
+   "wait": [
+    14,
+    70
+   ],
+   "dependsOn": [
+    "installs"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "sl-review-time"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio runs a managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/slack",
+   "title": "Composio: Slack toolkit FAQ (Marketplace warning)",
+   "quote": "Copy page Authentication Details Composio-managed OAuth available OAuth2 Frequently Asked Questions What does the Composio + Slack integration do?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "sl-10",
+   "claim": "Marketplace submissions need at least 10 active workspace installs, held through the whole review",
+   "url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement",
+   "title": "Slack changelog: 10-install requirement (Sep 2026)",
+   "quote": "Slack Marketplace apps September 1, 2026 As of July 2026, we require that apps submitting to the Slack Marketplace have at least 10 installations on active workspaces, up from the temporary lower threshold.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "sl-review-time",
+   "claim": "Preliminary review takes up to 10 business days; functional review up to 10 weeks",
+   "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guide",
+   "title": "Slack Docs: Marketplace review guide",
+   "quote": "Submission timeline ​ Currently, the preliminary part of the review takes up to 10 business days to receive feedback, while the functional review takes up to 10 weeks for new submissions and 6 weeks for published apps resubmitting changes.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "sl-unlisted",
+   "claim": "Unlisted distributed apps are not reviewed; only Marketplace apps are",
+   "url": "https://docs.slack.dev/app-management/distribution/",
+   "title": "Slack Docs: App lifecycle & distribution",
+   "quote": "Unlike unlisted distributed apps, apps listed in the Slack Marketplace are reviewed against our requirements & guidelines to ensure a quality experience for end users.",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "sl-llm",
+   "claim": "Marketplace apps may not use Slack data to train LLMs",
+   "url": "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements",
+   "title": "Slack Docs: Marketplace guidelines",
+   "quote": "use Slack data to train Large Language Models (LLMs).",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "cap-signin",
+   "claim": "Sign in with Slack: OpenID Connect, no review",
+   "url": "https://docs.slack.dev/app-management/distribution/",
+   "title": "Slack Docs: App lifecycle & distribution",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth available”",
+   "url": "https://docs.composio.dev/toolkits/slack",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth available”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://slack.com/openid/connect/authorize · 3 scopes advertised",
+   "url": "https://slack.com/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://slack.com/openid/connect/authorize · 3 scopes advertised",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Authorize endpoint (fake client): HTTP 200 — endpoint is live",
+   "url": "https://slack.com/oauth/v2/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 200 — endpoint is live",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-4",
+   "claim": "Manifest validation API (unauthenticated): Responds {\"ok\":false,\"error\":\"not_authed\"}: live, but validating a manifest needs an app configuration token from api.slack.com/apps, so an agent can pre-validate only after you generate one",
+   "url": "https://slack.com/api/apps.manifest.validate",
+   "title": "Manifest validation API (unauthenticated)",
+   "quote": "Responds {\"ok\":false,\"error\":\"not_authed\"}: live, but validating a manifest needs an app configuration token from api.slack.com/apps, so an agent can pre-validate only after you generate one",
+   "checked": "2026-11-01",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Turn on public distribution today. Any workspace that allows non-Marketplace apps can install right away.",
+   "Recruit your 10 beta workspaces now. That clock is the longest one."
+  ],
+  "rejections": [
+   "Requests more scopes than the features need",
+   "Uses Slack data to train LLMs",
+   "Lets AI make consequential decisions without human review",
+   "Support or privacy page sits behind a login",
+   "Fewer than 10 active installs during review"
+  ],
+  "blockers": [
+   {
+    "problem": "“This app isn't listed in the Slack Marketplace” or an admin-approval request",
+    "fix": "The workspace restricts unlisted apps. Ask a workspace admin to approve the app, or have an Owner install it. The long-term fix is the Marketplace listing."
+   },
+   {
+    "problem": "Activate Public Distribution is greyed out",
+    "fix": "One of the four checks is failing. Most often a redirect URL uses http://, or a token is hard-coded."
+   }
+  ],
+  "uncertain": [
+   "The total review time across both stages varies. Third parties report up to about 10 weeks."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/slack",
+   "result": "Toolkit page says “Composio-managed OAuth available”",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://slack.com/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://slack.com/openid/connect/authorize · 3 scopes advertised",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://slack.com/oauth/v2/authorize",
+   "result": "HTTP 200 — endpoint is live",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Manifest validation API (unauthenticated)",
+   "url": "https://slack.com/api/apps.manifest.validate",
+   "result": "Responds {\"ok\":false,\"error\":\"not_authed\"}: live, but validating a manifest needs an app configuration token from api.slack.com/apps, so an agent can pre-validate only after you generate one",
+   "ok": true,
+   "at": "2026-11-01"
+  }
+ ],
+ "checks": [
+  {
+   "claim": "Marketplace submissions need 10 active workspace installs, held for the whole review",
+   "status": "confirmed",
+   "note": "Slack changelog, Sep 1 2026: 'at least 10 installations on active workspaces… throughout the entire duration of the review' (back up from a temporary lower bar).",
+   "url": "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement",
+   "at": "2026-11-01"
+  }
+ ],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

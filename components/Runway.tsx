@@ -1,5 +1,6 @@
 "use client";
 import type { Step } from "@/lib/types";
+
 import { runway, RULER_TICKS, type Lane } from "@/lib/plan";
 
 const LANES: { id: Lane; label: string; sub: string }[] = [
@@ -41,7 +42,7 @@ export default function Runway({ steps, onPick }: { steps: Step[]; onPick?: (id:
         <div />
         <div className="relative h-5 border-b border-ink">
           {ticks.map((t) => (
-            <span key={t.label} className="absolute bottom-0 flex flex-col items-start" style={{ left: `${t.x * 100}%` }}>
+            <span key={t.label} className="rw-tick absolute bottom-0 flex flex-col items-start" style={{ left: `${t.x * 100}%` }}>
               <span className="mono num mb-0.5 text-[10.5px] text-ink-3">{t.label.toUpperCase()}</span>
               <span className="h-1.5 w-px bg-ink" />
             </span>
@@ -60,7 +61,7 @@ export default function Runway({ steps, onPick }: { steps: Step[]; onPick?: (id:
             </div>
             <div className="relative" style={{ height: n * ROW_H + 12 }}>
               {ticks.map((t) => (
-                <span key={t.label} className="absolute top-0 bottom-0 w-px bg-rule" style={{ left: `${t.x * 100}%` }} />
+                <span key={t.label} className="rw-tick absolute top-0 bottom-0 w-px bg-rule" style={{ left: `${t.x * 100}%` }} />
               ))}
               <span className="absolute top-0 bottom-0 right-0 w-[2px] bg-signal/70" />
               {!laneBars.length && (
@@ -77,12 +78,12 @@ export default function Runway({ steps, onPick }: { steps: Step[]; onPick?: (id:
                 const label = b.ns.join(" ");
                 return (
                   <button
-                    key={`${b.ids.join("+")}-${b.lane}`}
+                    key={`${b.ids[0]}-${b.lane}-${b.kind}`}
                     type="button"
                     title={tip}
                     aria-label={tip}
                     onClick={() => onPick?.(b.id)}
-                    className="group absolute flex h-[16px] items-stretch fill-in"
+                    className="rw-bar group absolute flex h-[16px] items-stretch"
                     style={{ left: `${left}%`, top, width: `${solid + tail}%`, minWidth: 8 + label.length * 6.4 }}
                   >
                     {b.kind === "wait" ? (

@@ -1,0 +1,326 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "twitter",
+ "name": "X (Twitter)",
+ "domain": "x.com",
+ "category": "Social",
+ "console": "https://console.x.com",
+ "appType": "X developer app (OAuth 2.0 with PKCE)",
+ "summary": "There's no approval queue. Money is the gate: since Feb 2026 the X API is pay-per-use, with no free tier. Composio dropped its managed X app, so you have to bring your own.",
+ "composio": {
+  "managed": "not_available",
+  "slug": "twitter",
+  "note": "Composio removed managed Twitter credentials in Feb 2026. You need your own developer app and credits.",
+  "facts": [
+   "composio-managed"
+  ]
+ },
+ "capabilities": [
+  {
+   "id": "read",
+   "label": "Read posts & users",
+   "keywords": [
+    "read",
+    "monitor",
+    "search",
+    "timeline",
+    "mention"
+   ],
+   "scopes": [
+    {
+     "name": "tweet.read",
+     "tier": "paid",
+     "facts": []
+    },
+    {
+     "name": "users.read",
+     "tier": "paid",
+     "facts": []
+    },
+    {
+     "name": "offline.access",
+     "tier": "paid",
+     "facts": []
+    }
+   ],
+   "tier": "paid",
+   "why": "About $0.005 per post read and $0.01 per user read",
+   "default": false,
+   "gates": [
+    "credits"
+   ],
+   "steps": [],
+   "facts": [
+    "x-read-price",
+    "x-per-request"
+   ]
+  },
+  {
+   "id": "post",
+   "label": "Post on behalf of users",
+   "keywords": [
+    "post",
+    "tweet",
+    "publish",
+    "reply"
+   ],
+   "scopes": [
+    {
+     "name": "tweet.read",
+     "tier": "paid",
+     "facts": []
+    },
+    {
+     "name": "tweet.write",
+     "tier": "paid",
+     "facts": []
+    },
+    {
+     "name": "users.read",
+     "tier": "paid",
+     "facts": []
+    },
+    {
+     "name": "offline.access",
+     "tier": "paid",
+     "facts": []
+    }
+   ],
+   "tier": "paid",
+   "why": "$0.015 per post, $0.20 if the post contains a link",
+   "default": true,
+   "gates": [
+    "credits"
+   ],
+   "steps": [],
+   "facts": [
+    "x-per-request"
+   ]
+  },
+  {
+   "id": "dm",
+   "label": "Read/send DMs",
+   "keywords": [
+    "dm",
+    "direct message"
+   ],
+   "scopes": [
+    {
+     "name": "dm.read",
+     "tier": "paid",
+     "facts": []
+    },
+    {
+     "name": "dm.write",
+     "tier": "paid",
+     "facts": []
+    }
+   ],
+   "tier": "paid",
+   "why": "Billed per DM event",
+   "default": false,
+   "gates": [
+    "credits"
+   ],
+   "steps": [],
+   "facts": [
+    "x-per-request"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "credits",
+   "kind": "payment",
+   "label": "Prepaid credits",
+   "plain": "No review, but every call is billed.",
+   "steps": [
+    "credits"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": [
+    "x-per-request"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "id": "account",
+   "title": "Sign up for a developer account in the Developer Console",
+   "detail": "console.x.com. Accept the developer terms and describe your use case.",
+   "owner": "you",
+   "agent": "",
+   "human": "Sign up with the X account that will own the app",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://console.x.com",
+   "facts": []
+  },
+  {
+   "id": "credits",
+   "title": "Add a payment method and buy credits",
+   "detail": "Prepaid credits are deducted per request, and calls fail at zero. Set a spending limit and auto-recharge. First-time buyers get $20 in free credits, plus a match of the first auto-recharge up to $50. Pay-per-use is capped at 3M post reads a month.",
+   "owner": "you",
+   "agent": "",
+   "human": "Add a card, buy credits and set a cap",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "cost": "Pay-per-use; no minimum",
+   "facts": [
+    "x-per-request"
+   ]
+  },
+  {
+   "id": "app",
+   "title": "Create the app, set Read+Write, OAuth 2.0",
+   "detail": "User authentication settings: type Web App, callback URL (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback), website URL. Posting needs a user-context token, not the app bearer token.",
+   "owner": "both",
+   "agent": "Configure user auth settings and the callback; test PKCE",
+   "human": "Create it in the console",
+   "effortMin": 15,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "budget",
+   "title": "Model your per-user cost",
+   "detail": "Agents that read timelines can burn credits fast. Cache reads and dedupe.",
+   "owner": "agent",
+   "agent": "Estimate monthly cost from expected calls per user",
+   "human": "",
+   "effortMin": 30,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "composio-managed",
+   "claim": "Composio has no managed OAuth app for this toolkit",
+   "url": "https://docs.composio.dev/toolkits/twitter",
+   "title": "Composio: Twitter toolkit FAQ (managed credentials removed)",
+   "quote": "Copy page Authentication Details Composio-managed OAuth not available OAuth2 Frequently Asked Questions Why are Composio managed credentials no longer available for Twitter?",
+   "checked": "2026-11-01",
+   "status": "tested"
+  },
+  {
+   "id": "x-per-request",
+   "claim": "X API charges per resource read and per request written, from prepaid credits",
+   "url": "https://docs.x.com/x-api/getting-started/pricing",
+   "title": "X Docs: Pay-per-usage pricing and credits",
+   "quote": "See free credit incentives ​ Credit consumption details All prices are per resource fetched (reads) or per request (writes/actions).",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "x-read-price",
+   "claim": "Reading a post costs $0.005",
+   "url": "https://docs.x.com/x-api/getting-started/pricing",
+   "title": "X Docs: Pay-per-usage pricing and credits",
+   "quote": "Resource Unit cost Posts: Read $0.005 per resource User: Read $0.010 per resource DM Event: Read $0.010 per resource Following/Followers: Read $0.010 per resource List: Read $0.005 per resource Space: Read $0.0",
+   "checked": "2026-11-01",
+   "status": "sourced"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "url": "https://docs.composio.dev/toolkits/twitter",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "Authorize endpoint (fake client): HTTP 200 — endpoint is live",
+   "url": "https://x.com/i/oauth2/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 200 — endpoint is live",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Live the same day: there's no review. Budget for credits first.",
+   "Composio can't do this one for you. Bring your own app."
+  ],
+  "rejections": [
+   "Use cases flagged as LLM-generated spam or automation abuse can be restricted (X tightened self-serve rules in 2026)"
+  ],
+  "blockers": [
+   {
+    "problem": "403 when posting",
+    "fix": "You're using the app-only bearer token. Posting needs an OAuth 2.0 user token with tweet.write, and the app set to Read and Write."
+   },
+   {
+    "problem": "Requests suddenly fail",
+    "fix": "Your credit balance hit zero or the spending cap. Top up or turn on auto-recharge."
+   }
+  ],
+  "uncertain": [
+   "X changes prices and rules often. Recheck the pricing page before launch."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/twitter",
+   "result": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://x.com/i/oauth2/authorize",
+   "result": "HTTP 200 — endpoint is live",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [
+  {
+   "claim": "Posting costs about $0.015, 'more if it contains a link'",
+   "status": "corrected",
+   "note": "X pricing page: Post create $0.015, but a post containing a URL is $0.20 per request. Free credits: $20 after first purchase plus a match of the first auto-recharge up to $50. Pay-per-use is capped at 3M post reads a month.",
+   "url": "https://docs.x.com/x-api/getting-started/pricing",
+   "at": "2026-11-01"
+  },
+  {
+   "claim": "Composio has no managed X/Twitter OAuth app",
+   "status": "confirmed",
+   "note": "Toolkit page still reads 'Composio-managed OAuth not available'.",
+   "url": "https://docs.composio.dev/toolkits/twitter",
+   "at": "2026-11-01"
+  }
+ ],
+ "origin": "curated",
+ "verifiedAt": "2026-11-01"
+}

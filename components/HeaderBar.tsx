@@ -3,9 +3,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { IndexEntry } from "@/lib/types";
 import { exact, hrefFor, match } from "@/lib/search";
+import { parseIntent, intentHref, type IntentIndex } from "@/lib/intent";
 
 /** Compact command bar in the header on guide pages. On the home page the board owns the command bar. */
-export default function HeaderBar({ index }: { index: IndexEntry[] }) {
+export default function HeaderBar({ index, intents }: { index: IndexEntry[]; intents: IntentIndex[] }) {
   const path = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -29,9 +30,10 @@ export default function HeaderBar({ index }: { index: IndexEntry[] }) {
 
   const results = useMemo(() => (q.trim() ? match(index, q).slice(0, 6) : []), [index, q]);
   const hit = exact(index, q);
-  const rows: { label: string; sub: string; href: string }[] = [
-    ...results.map((e) => ({ label: e.name, sub: e.curated || e.generated ? `${e.wait} · ${e.gate || ""}` : "investigate live", href: hrefFor(e, q) })),
-    ...(q.trim() && !hit ? [{ label: `Investigate “${q.trim()}” live`, sub: "agent", href: hrefFor(null, q) }] : []),
+  const intent = q.trim().split(/\s+/).length >= 3 ? parseIntent(q, intents) : null;
+  const rows: { label: string; sub: string; href: string }[] = intent ? [{ label: `Plan ${intent.app}${intent.caps.length ? `: ${intent.caps.map((c) => intents.find((x) => x.slug === intent.slug)?.caps.find((k) => k.id === c)?.label || c).join(", ")}` : ""}`, sub: intent.ready ? "instant" : "investigate", href: intentHref(intent) }] : [
+    ...results.map((e) => ({ label: e.name, sub: e.curated || e.generated ? `${e.wait} · ${e.gate || ""}` : "investigate", href: hrefFor(e, q) })),
+    ...(q.trim() && !hit ? [{ label: `Investigate “${q.trim()}”`, sub: "1–3 min", href: hrefFor(null, q) }] : []),
   ];
 
   if (home) return <div className="flex-1" />;
@@ -59,7 +61,7 @@ export default function HeaderBar({ index }: { index: IndexEntry[] }) {
             if (e.key === "Escape") { setQ(""); ref.current?.blur(); }
             if (e.key === "Enter" && rows[hi]) go(rows[hi].href);
           }}
-          placeholder="Any app or URL"
+          placeholder="An app, or what your agent does"
           aria-label="Find an app or investigate a new one"
           className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-ink-3"
         />

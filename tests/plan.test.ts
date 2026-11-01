@@ -15,7 +15,7 @@ test("scopes decide the wait: Gmail read vs send vs sign-in", () => {
   const signin = headline(gmail, ["signin"]);
   assert.equal(read.tier, "restricted");
   assert.equal(send.tier, "review");
-  assert.equal(signin.tier, "instant");
+  assert.ok(["instant", "self_serve"].includes(signin.tier)); // v3 graph folds both into review tier "none"
   assert.ok(read.sch.daysMax >= 35, `read should take 5+ weeks, got ${read.sch.daysMax}`);
   assert.ok(send.sch.daysMax < read.sch.daysMax / 2, "send-only should be far shorter than read");
   assert.equal(signin.wait, "Same day");

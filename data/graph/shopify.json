@@ -1,0 +1,379 @@
+{
+ "schema": "greenlight.graph/1",
+ "version": 1,
+ "slug": "shopify",
+ "name": "Shopify",
+ "domain": "shopify.com",
+ "category": "E-commerce",
+ "console": "https://dev.shopify.com/dashboard/",
+ "appType": "Shopify app (Partner org, Dev Dashboard)",
+ "summary": "Custom distribution (one store, or stores in one Plus org) needs no review. Public distribution means App Store review, a one-time registration fee, and a separate review to access protected customer data such as names and emails. Your distribution choice is permanent.",
+ "composio": {
+  "managed": "not_available",
+  "slug": "shopify",
+  "note": "Composio lists this toolkit but you must bring your own OAuth app (client ID + secret) in a custom auth config.",
+  "facts": []
+ },
+ "capabilities": [
+  {
+   "id": "custom",
+   "label": "Connect one merchant's store",
+   "keywords": [
+    "connect",
+    "merchant",
+    "store"
+   ],
+   "scopes": [
+    {
+     "name": "read_products",
+     "tier": "none",
+     "facts": []
+    },
+    {
+     "name": "read_orders",
+     "tier": "none",
+     "facts": []
+    }
+   ],
+   "tier": "none",
+   "why": "Custom distribution: install link, no App Store review",
+   "default": false,
+   "gates": [],
+   "steps": [],
+   "facts": [
+    "cap-custom"
+   ]
+  },
+  {
+   "id": "public",
+   "label": "Any merchant can install",
+   "keywords": [
+    "merchant",
+    "install"
+   ],
+   "scopes": [
+    {
+     "name": "read_products",
+     "tier": "sensitive",
+     "facts": []
+    },
+    {
+     "name": "read_orders",
+     "tier": "sensitive",
+     "facts": []
+    }
+   ],
+   "tier": "sensitive",
+   "why": "Public distribution requires App Store review",
+   "default": true,
+   "gates": [
+    "gate-1"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-public"
+   ]
+  },
+  {
+   "id": "pcd",
+   "label": "Read customer names, emails, addresses",
+   "keywords": [
+    "read",
+    "customer",
+    "names",
+    "emails",
+    "addresses"
+   ],
+   "scopes": [
+    {
+     "name": "read_customers",
+     "tier": "sensitive",
+     "facts": []
+    }
+   ],
+   "tier": "sensitive",
+   "why": "Protected customer data: level 1/2 access needs its own review for public apps",
+   "default": false,
+   "gates": [
+    "gate-2"
+   ],
+   "steps": [],
+   "facts": [
+    "cap-pcd"
+   ]
+  }
+ ],
+ "gates": [
+  {
+   "id": "gate-1",
+   "kind": "app_review",
+   "label": "Submit for App Store review",
+   "plain": "",
+   "steps": [
+    "listing",
+    "review"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  },
+  {
+   "id": "gate-2",
+   "kind": "app_review",
+   "label": "Request protected customer data access",
+   "plain": "",
+   "steps": [
+    "pcd"
+   ],
+   "skip": [],
+   "needsBusiness": false,
+   "facts": []
+  }
+ ],
+ "steps": [
+  {
+   "id": "partner",
+   "title": "Create a Partner organization and the app",
+   "detail": "Create it in the Dev Dashboard with the Shopify CLI. Add redirect URLs (Composio BYO: https://backend.composio.dev/api/v3/toolkits/auth/callback).",
+   "owner": "both",
+   "agent": "Scaffold with the Shopify CLI and set scopes and redirects",
+   "human": "Sign up for the Partner org",
+   "effortMin": 30,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "link": "https://dev.shopify.com/dashboard/",
+   "facts": []
+  },
+  {
+   "id": "distribution",
+   "title": "Choose the distribution method (permanent)",
+   "detail": "Custom (one store or one Plus org) or Public (App Store). **You can't change it later.** If you have separate dev and prod apps, choose on the prod app.",
+   "owner": "you",
+   "agent": "Lay out the trade-offs",
+   "human": "Choose",
+   "effortMin": 10,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": true,
+   "skip": [],
+   "facts": []
+  },
+  {
+   "id": "pcd",
+   "title": "Request protected customer data access",
+   "detail": "Declare which fields you need and why, and meet the level 1 (or level 2) requirements. Until it's approved, the API won't return that data from non-dev stores.",
+   "owner": "both",
+   "agent": "Draft the data-use justification and implement the requirements (encryption, retention)",
+   "human": "Submit the request",
+   "effortMin": 90,
+   "wait": [
+    3,
+    14
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-pcd"
+   ]
+  },
+  {
+   "id": "listing",
+   "title": "Register for the App Store and build the listing",
+   "detail": "One-time registration fee. You need the listing, an app icon, compliance webhooks, and billing via Shopify App Pricing if you charge.",
+   "owner": "both",
+   "agent": "Subscribe the compliance webhooks; draft the listing; run Shopify's AI self-review",
+   "human": "Pay the registration fee",
+   "effortMin": 240,
+   "wait": [
+    0,
+    0
+   ],
+   "dependsOn": [],
+   "base": false,
+   "skip": [],
+   "cost": "One-time App Store registration fee",
+   "facts": []
+  },
+  {
+   "id": "review",
+   "title": "Submit for App Store review",
+   "detail": "Status moves Draft → Submitted → Reviewed → Published. If core requirements fail, the app goes to Paused.",
+   "owner": "both",
+   "agent": "Pre-check against the requirements list",
+   "human": "Submit and respond to feedback",
+   "effortMin": 60,
+   "wait": [
+    5,
+    21
+   ],
+   "dependsOn": [
+    "listing"
+   ],
+   "base": false,
+   "skip": [],
+   "facts": [
+    "wait-review"
+   ]
+  }
+ ],
+ "alternatives": [],
+ "facts": [
+  {
+   "id": "cap-custom",
+   "claim": "Connect one merchant's store: Custom distribution: install link, no App Store review",
+   "url": "https://shopify.dev/docs/apps/launch/distribution",
+   "title": "Shopify: About app distribution",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-public",
+   "claim": "Any merchant can install: Public distribution requires App Store review",
+   "url": "https://shopify.dev/docs/apps/launch/distribution",
+   "title": "Shopify: About app distribution",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "cap-pcd",
+   "claim": "Read customer names, emails, addresses: Protected customer data: level 1/2 access needs its own review for public apps",
+   "url": "https://shopify.dev/docs/apps/launch/protected-customer-data",
+   "title": "Shopify: Work with protected customer data",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Cited in hand research; no verbatim quote captured yet"
+  },
+  {
+   "id": "wait-pcd",
+   "claim": "Request protected customer data access: 3–14 days provider-side",
+   "url": "https://shopify.dev/docs/apps/launch/protected-customer-data",
+   "title": "Shopify: Work with protected customer data",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Our estimate: the provider doesn't publish this wait"
+  },
+  {
+   "id": "wait-review",
+   "claim": "Submit for App Store review: 5–21 days provider-side",
+   "url": "https://shopify.dev/docs/apps/launch/app-store-review/review-process",
+   "title": "Shopify: About the app review process",
+   "quote": "",
+   "checked": "2026-10-30",
+   "status": "uncertain",
+   "note": "Our estimate: the provider doesn't publish this wait"
+  },
+  {
+   "id": "probe-1",
+   "claim": "Composio toolkit directory: Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "url": "https://docs.composio.dev/toolkits/shopify",
+   "title": "Composio toolkit directory",
+   "quote": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-2",
+   "claim": "OAuth/OIDC discovery: Discovery document found. authorize: https://accounts.shopify.com/oauth/authorize · PKCE: S256 · 9 scopes advertised",
+   "url": "https://accounts.shopify.com/.well-known/openid-configuration",
+   "title": "OAuth/OIDC discovery",
+   "quote": "Discovery document found. authorize: https://accounts.shopify.com/oauth/authorize · PKCE: S256 · 9 scopes advertised",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-3",
+   "claim": "Developer portal reachability: Reachable: https://shopify.dev/docs",
+   "url": "https://developers.shopify.com",
+   "title": "Developer portal reachability",
+   "quote": "Reachable: https://shopify.dev/docs",
+   "checked": "2026-10-30",
+   "status": "tested"
+  },
+  {
+   "id": "probe-4",
+   "claim": "Authorize endpoint (fake client): HTTP 400 — rejects unknown client: “invalid_client The error was: 'client_id' invalid Show request details client_id =greenlight-p”",
+   "url": "https://accounts.shopify.com/oauth/authorize",
+   "title": "Authorize endpoint (fake client)",
+   "quote": "HTTP 400 — rejects unknown client: “invalid_client The error was: 'client_id' invalid Show request details client_id =greenlight-p”",
+   "checked": "2026-10-30",
+   "status": "tested"
+  }
+ ],
+ "context": {
+  "launchToday": [
+   "Use custom distribution for your first merchant today: install link, no review.",
+   "Composio has no managed Shopify app (bring your own).",
+   "File the protected customer data request early if you need customer PII."
+  ],
+  "rejections": [
+   "Requesting access scopes you can't justify",
+   "Missing compliance webhooks",
+   "Submitting a beta or incomplete app",
+   "Billing outside Shopify App Pricing for public apps"
+  ],
+  "blockers": [
+   {
+    "problem": "API returns null for customer fields",
+    "fix": "You don't have protected customer data access yet. Request it in the dashboard. Development stores work without it."
+   },
+   {
+    "problem": "“App not found” when connecting via Composio",
+    "fix": "Check the store's myshopify domain and that your app's distribution allows that store."
+   }
+  ],
+  "uncertain": [
+   "The discovery probe found accounts.shopify.com, which is Shopify's own identity service. App OAuth runs per store at https://{shop}.myshopify.com/admin/oauth/authorize, which has no discovery document.",
+   "Shopify doesn't state the review turnaround on the cited pages. The ranges are estimates.",
+   "The exact registration fee isn't on the cited pages."
+  ]
+ },
+ "probes": [
+  {
+   "label": "Composio toolkit directory",
+   "url": "https://docs.composio.dev/toolkits/shopify",
+   "result": "Toolkit page says “Composio-managed OAuth not available” — bring your own OAuth app",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "OAuth/OIDC discovery",
+   "url": "https://accounts.shopify.com/.well-known/openid-configuration",
+   "result": "Discovery document found. authorize: https://accounts.shopify.com/oauth/authorize · PKCE: S256 · 9 scopes advertised",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Developer portal reachability",
+   "url": "https://developers.shopify.com",
+   "result": "Reachable: https://shopify.dev/docs",
+   "ok": true,
+   "at": "2026-10-30"
+  },
+  {
+   "label": "Authorize endpoint (fake client)",
+   "url": "https://accounts.shopify.com/oauth/authorize",
+   "result": "HTTP 400 — rejects unknown client: “invalid_client The error was: 'client_id' invalid Show request details client_id =greenlight-p”",
+   "ok": true,
+   "at": "2026-10-30"
+  }
+ ],
+ "checks": [],
+ "origin": "generated",
+ "verifiedAt": "2026-10-30",
+ "model": "batch: offline research agent (Hark), same schema; not yet human-reviewed"
+}

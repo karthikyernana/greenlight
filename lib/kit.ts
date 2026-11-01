@@ -1,4 +1,4 @@
-import type { Guide } from "./types";
+import type { Guide, Step } from "./types";
 import { activeSteps, headline, TIER_META, startToday, fmtEffort } from "./plan";
 
 /**
@@ -12,10 +12,10 @@ export type KitItem = { id: string; title: string; hint: string; body: string; l
 
 const REVIEW_TIERS = new Set(["review", "restricted", "partner"]);
 
-export function buildKit(g: Guide, sel: string[], shareUrl?: string): KitItem[] {
+export function buildKit(g: Guide, sel: string[], shareUrl?: string, planned?: { steps: Step[]; wait: string }): KitItem[] {
   const caps = g.capabilities.filter((c) => sel.includes(c.id));
-  const steps = activeSteps(g, sel);
-  const h = headline(g, sel);
+  const steps = planned?.steps || activeSteps(g, sel);
+  const h = { ...headline(g, sel), ...(planned ? { wait: planned.wait } : {}) };
   const reviewed = caps.filter((c) => REVIEW_TIERS.has(c.tier));
   const isGoogle = /google/i.test(g.domain) || /gmail|google/i.test(g.slug);
   const isMeta = /instagram|facebook|meta/i.test(g.slug + g.domain);
@@ -171,10 +171,10 @@ ${JSON.stringify(payload, null, 2)}
   return items;
 }
 
-export function kitMarkdown(g: Guide, sel: string[], shareUrl?: string): string {
-  const h = headline(g, sel);
-  const steps = activeSteps(g, sel);
-  const kit = buildKit(g, sel, shareUrl);
+export function kitMarkdown(g: Guide, sel: string[], shareUrl?: string, planned?: { steps: Step[]; wait: string }): string {
+  const h = { ...headline(g, sel), ...(planned ? { wait: planned.wait } : {}) };
+  const steps = planned?.steps || activeSteps(g, sel);
+  const kit = buildKit(g, sel, shareUrl, planned);
   const L: string[] = [
     `# ${g.name} OAuth setup kit`,
     ``,
