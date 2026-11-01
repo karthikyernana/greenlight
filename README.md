@@ -85,3 +85,17 @@ that; otherwise the name must resolve to a real product within ~1.6 s — domain
 describes it as software, a developer host for `<name>.com` resolves (wildcard DNS excluded), a fast search finds its
 official developer docs, or Jev (when `TYPESAFE_API_KEY` is set) says it is a product with an API. Otherwise:
 `Couldn't find an app called "asdfgh". Try a product name or its website.` plus the nearest library names.
+
+**Measured** (headless Chromium, production https://oauth-greenlight-v2.vercel.app, click on a board row → guide):
+
+| | before (bb4020f) | after (319ff08) |
+|---|---|---|
+| desktop: click → guide on screen | 4,042–4,053 ms (page frozen, then "Transition was aborted because of timeout in DOM update") | 72–130 ms; pressed state in 6–21 ms |
+| phone (390 px, CPU 4×, Fast 4G): click → guide | 4,102–4,116 ms (same freeze) | 286–636 ms; pressed state in 32–76 ms (one full-suite outlier at 115 ms) |
+| network after click | RSC fetch 258–278 ms + 2 JS chunks | none (prefetched) |
+| `/guide/gmail` | `force-dynamic`, x-vercel-cache MISS | SSG + ISR, x-vercel-cache HIT |
+
+Gate on production: `asdfgh` → rejected in 13 ms server time (0.48 s round trip); `FreshBooks` → Jev 0.96 (0.65 s);
+`xero.com` → Composio directory (0.28 s); the Gmail need sentence → `/guide/gmail?need=draft,read` (0.31 s).
+New model order on production: one fresh investigation (FreshBooks, not previously stored) finished in **86 s**
+(Xero under the old order: 281 s), all model calls on Gemini/Groq (1.4–7.5 s each), the `LLM_*` gateway never called.

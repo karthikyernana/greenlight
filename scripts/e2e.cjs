@@ -1,7 +1,7 @@
 /* End-to-end browser tests (puppeteer-core + a system Chromium).
      npm run e2e                                   → against http://localhost:3100 (a `next start` with GREENLIGHT_FAKE_PIPELINE=1)
      E2E_BASE=https://oauth-greenlight-v2.vercel.app npm run e2e   → against a deployment (the mocked-investigation test is skipped)
-   Env: CHROME_PATH (default /usr/bin/chromium), E2E_CHROME_ARGS (extra Chromium flags, e.g. --no-proxy-server when an
+   Env: E2E_ONLY=<regex> runs only the tests whose name matches. CHROME_PATH (default /usr/bin/chromium), E2E_CHROME_ARGS (extra Chromium flags, e.g. --no-proxy-server when an
         authenticating egress proxy is set in the environment and Chromium fails with ERR_INVALID_AUTH_CREDENTIALS), E2E_SHOTS=<dir> to save desktop 1440 + mobile 390 screenshots,
         E2E_FAKE=1 when the server runs the fake pipeline (default on for localhost).
    Every page visited also runs the layout audit: no horizontal page overflow, no leaf element whose text spills
@@ -99,6 +99,7 @@ async function shot(p, name) {
 }
 
 async function t(name, fn, { skip } = {}) {
+  if (process.env.E2E_ONLY && !new RegExp(process.env.E2E_ONLY, "i").test(name)) return;
   if (skip) { results.push({ name, status: "skipped", why: skip }); console.log(`- SKIP ${name}: ${skip}`); return; }
   const t0 = Date.now();
   try { await fn(); results.push({ name, status: "pass", ms: Date.now() - t0 }); console.log(`✓ ${name} (${Date.now() - t0} ms)`); }
