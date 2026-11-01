@@ -9,7 +9,7 @@ export type Trace = {
   stages: StageRec[]; tools: ToolCall[]; llm: CallRecord[];
   tokens: { prompt: number; completion: number; budget: number };
   models: string[]; outcome: "ok" | "partial" | "failed"; error?: string;
-  verifier: { checked: number; quoteMatched: number; downgraded: number; corrected: number; recheckRounds: number; criticIssues: number; jevChecked?: number; jevRejected?: number };
+  verifier: { checked: number; quoteMatched: number; downgraded: number; corrected: number; recheckRounds: number; criticIssues: number; unresolved?: number; jevChecked?: number; jevRejected?: number };
   /** Typed decisions and which engine made each (Jev with its probability, the LLM, rules, or code). Optional for old traces. */
   decisions?: Decision[];
   retrieval?: { firecrawl: boolean; firecrawlPages: number; jina: string };

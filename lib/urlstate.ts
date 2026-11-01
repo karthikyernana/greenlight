@@ -1,3 +1,4 @@
+import { canonicalSlug } from "./canonical";
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from "lz-string";
 import { Guide } from "./types";
 import { defaultSelection } from "./plan";
@@ -44,9 +45,7 @@ export function decodeGuideHash(hash: string): Guide | null {
 }
 
 export function slugify(s: string) {
-  return (
-    s.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\.(com|io|ai|dev|app|co|org|net)(\/.*)?$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "app"
-  );
+  return canonicalSlug(s);
 }
 
 /* ───────── v3: graph + need + profile in the URL ───────── */

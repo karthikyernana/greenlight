@@ -49,7 +49,7 @@ export function parseIntent(raw: string, index: IntentIndex[]): Intent {
   const n = q.match(/\b(\d{1,6})\s*(users|people|customers|accounts)\b/);
   if (n) profile.scale = Number(n[1]) <= 100 ? "small" : "large";
   else if (/\b(a few|handful|beta|pilot|design partners?)\b/.test(q)) profile.scale = "small";
-  if (/\b(no company|not a company|individual|solo|indie|side project|hobby|unregistered|personal project)\b/.test(q)) profile.business = false;
+  if (/\b(no (registered )?(company|business|entity)|not a (registered )?(company|business)|without a (registered )?(company|business)|individual|solo|indie|side project|hobby|unregistered|not registered|personal project)\b/.test(q)) profile.business = false;
   return { slug: best?.slug, app, ready: !!best?.ready, composioSlug: best?.composioSlug, caps, profile, sentence };
 }
 

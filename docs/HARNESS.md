@@ -65,6 +65,32 @@ The real-model "after" run could not be done: on 2026-11-01 ~18:40 IST the JoinG
 
 Caveat: Karthik's Firecrawl plan rate-limits requests per minute. Mock runs take seconds per app, so after 2–4 apps Firecrawl answered 429 and the rest fell back to plain fetch (in the second run only GitHub and Notion were scraped by Firecrawl). A 429 now stops Firecrawl for the rest of that run. Real-model runs take minutes per app and use ≤ 6 scrapes + 1–2 searches, so they stay under the limit. ≈ 110 Firecrawl credits were used for all local testing.
 
+## v4 re-run (2026-11-01 evening): measured effect vs the earlier baseline
+
+Real harness, in-process in the Hark sandbox (`NODE_USE_ENV_PROXY=1`), `--budget 60000 --concurrency 1 --tag groq-firecrawl`. Result: `eval/results/2026-11-01-live-groq-firecrawl.{md,json}`. Baseline: `eval/results/2026-11-01-live.*` (JoinGonka gateway models, plain fetch retrieval).
+
+| Metric | Baseline (JoinGonka, fetch) | v4 run (Groq `openai/gpt-oss-120b` + Firecrawl) | Change |
+|---|---|---|---|
+| Completed | 7/10 | **10/10** | +30 pts |
+| Scope-tier accuracy | 11% | 17% | +6 pts |
+| Gate recall (exact) | 25% | **65%** | +40 pts |
+| Wait-range overlap | 30% | 50% | +20 pts |
+| Quote-match (before re-check) | 58% | **74%** | +16 pts |
+| Median latency | 237 s | **56 s** | −76% |
+| Tokens (10 apps) | 165,486 | 171,887 | +4% |
+
+What each feature contributed, as far as it can be separated:
+
+| Feature | Measured effect | How measured |
+|---|---|---|
+| Firecrawl retrieval (alone) | quote-match 17% → 47% (+30 pts), gate recall 10% → 32% (+22 pts), completed 7 → 9 | Mock model, so only retrieval changes (v3 table above) |
+| Model order → Groq (`gpt-oss-120b`, with `gpt-oss-20b` / `qwen3.8-27b` as fallbacks and 429 reset waits) + Firecrawl, together | the v4 row above: +30 pts completed, −76% median latency | Real run. Not split further: isolating Groq-without-Firecrawl needs another ~170k Groq tokens, skipped to keep usage modest |
+| JoinGonka (`LLM_*`) | **not measured** | No `LLM_*` credentials were bound in this sandbox session (the gateway also answered 402 earlier today) |
+| Jev typed decisions | **not measured** | `TYPESAFE_API_KEY` not available in the sandbox; mocked tests only |
+| Generate-once cache | Xero: cold investigation 57 s → cached 0.07 s (−99.9%), zero model calls | Local production build, same server, second request for `xero.com` |
+
+Caveats: 10 apps is a small sample; tier accuracy stays low because the model labels capabilities differently from the golden graphs (the scorer matches by scope string or label overlap). X still scores 0 (its docs are JS-rendered and its gates are pricing, not review). Groq's free tier rate-limits tokens per minute, so runs use `--concurrency 1`.
+
 ## Re-run
 
 ```bash

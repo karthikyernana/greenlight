@@ -14,7 +14,7 @@
 - A fixed agent pipeline with a code verifier for unknown apps, and a harness that scores it against the hand-built graphs.
 
 **Cut, and why.**
-- Accounts, saved projects, a database: share URLs carry the whole state. Not needed to prove the idea.
+- Accounts and sign-up. "Your apps" (pinned + recently viewed) lives in localStorage instead: a demo that asks for an account before showing a plan loses most people at the door, and nothing on the shelf is sensitive. Future: sync the shelf to the user's Composio account, where their toolkits and auth configs already live.
 - Automating console steps with a browser agent: signing into users' provider accounts is a trust problem worth its own design.
 - Chat. A plan the user can change by tapping is faster to read and to trust than a conversation.
 - Search APIs with keys as a requirement: retrieval works without one. Firecrawl (JS-rendered scrape + search) is used only when `FIRECRAWL_API_KEY` is set, capped at a few pages per run; Jina Reader is the free fallback; plain fetch is always last (docs/RETRIEVAL.md).
@@ -28,3 +28,23 @@
 - Use "Faster paths" to sell the managed app honestly: it saves weeks, and the trade-off is stated.
 - Use aggregate needs (which scopes developers ask for) to decide which managed apps to get verified next.
 - Use the graph as a living checklist for its own verification submissions.
+
+## v4: generate once, reuse for everyone
+
+**Why.** An investigation costs 1–4 minutes and tens of thousands of model tokens. The answer for "Xero" is the same for every developer that week, so paying for it twice is waste and makes the second person wait for nothing.
+
+**How.** A finished investigation is stored in a shared store keyed by a canonical slug (`lib/canonical.ts`: "Xero", "xero.com", "developer.xero.com", "Xero API" → `xero`). Any later request for the same app, from anyone, is served from the store with zero model calls (`lib/generate.ts`). The store is Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set (`guides/<slug>.json`, `traces/<id>.json`); without it, the server instance's memory, and `/api/status → store.mode` says `memory` and `shared: false`.
+- **Re-check** happens only when the guide is older than 30 days (shown as "older than 30 days", Re-check always allowed) or someone presses **Re-check**, which is rate-limited per app (10 minutes after the last run starts) and per IP (20 runs/hour).
+- **No duplicate generations.** The command bar matches what you type against the library and the store (exact canonical slug, then fuzzy name/domain/aliases: one typo in a 4–6 letter name, two in 7+), and offers "Did you mean X?" before "Investigate". The server repeats the check, so a direct API call can't create a duplicate either.
+
+## v4: publishing policy (no human click)
+
+| State | Where it shows | How it gets there |
+|---|---|---|
+| **Draft · agent-generated** | Its own share link, instantly; command-bar matches; "Your apps". Not on the public board. | Every new guide starts here. |
+| **Verified by checks** | The public board, with the badge. | Promoted automatically when **all three** pass: (1) ≥ 80% of the specialists' quotes were found verbatim in the fetched source (code check, before re-checks); (2) no unresolved contradiction: every fact the critic flagged was confirmed or corrected on re-check; (3) every gate fact is Sourced or Tested (each gate cites ≥ 1 fact; none Uncertain). |
+| **Curated · hand-researched** | Board, separate badge. | Researched and re-checked by a person; never computed. |
+
+A Draft lists exactly which checks failed (amber notice under the verdict, and "Publishing checks" in Evidence). The verdict is computed by `lib/publish.ts` and stored with the guide. The six agent-generated guides shipped in the repo since v2 (Calendly, Dropbox, Docusign, Shopify, Spotify, Zoom) are scored the same way; their quotes were never verbatim-checked, so they show **Draft**. They stay listed on the board (they were public before v4) with the Draft badge rather than silently disappearing.
+
+**Future work: human review queue.** Composio's integrations team gets a queue of Drafts sorted by demand (how often each is opened), each showing its failed checks and Uncertain facts; one click promotes to Curated after a person confirms the facts. Not built: the automatic policy is enough for a demo and keeps the "no human click" property.

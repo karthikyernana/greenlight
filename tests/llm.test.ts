@@ -17,7 +17,7 @@ const S = z.object({ tier: z.enum(["none", "restricted"]), n: z.number() });
 beforeEach(() => {
   globalThis.fetch = realFetch;
   process.env.LLM_BASE_URL = "https://gate.example/v1";
-  process.env.LLM_API_KEY = "test";
+  process.env.LLM_API_KEY = "sk-unit-secret-9f3";
   process.env.LLM_MODEL = "deepseek-ai/DeepSeek-V4-Flash,zai-org/GLM-5.3-Flash";
   for (const k of ["GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY"]) delete process.env[k];
 });
@@ -27,7 +27,7 @@ test("/api/status reports the LLM_* provider as primary", () => {
   assert.equal(s.primary?.id, "llm");
   assert.equal(s.primary?.model, "deepseek-ai/DeepSeek-V4-Flash");
   assert.equal(s.primary?.host, "gate.example");
-  assert.ok(!JSON.stringify(s).includes("test")); // never echoes the key
+  assert.ok(!JSON.stringify(s).includes("sk-unit-secret-9f3")); // never echoes the key
 });
 
 test("JSON mode, think blocks and reasoning_content are handled", async () => {

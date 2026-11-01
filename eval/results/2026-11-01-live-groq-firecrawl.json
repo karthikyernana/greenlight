@@ -1,0 +1,325 @@
+{
+ "summary": {
+  "mode": "live",
+  "date": "2026-11-01",
+  "base": "in-process",
+  "apps": 10,
+  "completed": 10,
+  "scopeTierAccuracy": 0.16666666666666666,
+  "capabilityCoverage": 0.31666666666666665,
+  "gateRecall": 0.65,
+  "gateRecallLoose": 0.65,
+  "waitRangeOverlap": 0.5,
+  "citationValidity": 0.7416283716283717,
+  "downgraded": 23,
+  "corrected": 3,
+  "medianLatencyMs": 55962,
+  "totalTokens": 171887
+ },
+ "rows": [
+  {
+   "slug": "github",
+   "name": "GitHub",
+   "ok": true,
+   "tierAcc": 0.25,
+   "capCoverage": 0.25,
+   "gateRecall": 1,
+   "gateRecallLoose": 1,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 1,
+   "factsChecked": 9,
+   "downgraded": 0,
+   "corrected": 0,
+   "corrections": 3,
+   "faultCaught": false,
+   "retrievers": {
+    "fetch": 11,
+    "firecrawl": 6
+   },
+   "jevDecisions": 0,
+   "latencyMs": 55962,
+   "tokens": 17598,
+   "models": [
+    "groq:openai/gpt-oss-120b",
+    "groq:openai/gpt-oss-20b"
+   ],
+   "traceId": "mvxx5y7hafj9q"
+  },
+  {
+   "slug": "notion",
+   "name": "Notion",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0.3333333333333333,
+   "gateRecall": 1,
+   "gateRecallLoose": 1,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 1,
+   "factsChecked": 9,
+   "downgraded": 0,
+   "corrected": 0,
+   "corrections": 4,
+   "faultCaught": false,
+   "retrievers": {
+    "fetch": 5,
+    "firecrawl": 3
+   },
+   "jevDecisions": 0,
+   "latencyMs": 44103,
+   "tokens": 19309,
+   "models": [
+    "groq:openai/gpt-oss-20b",
+    "groq:qwen/qwen3.8-27b",
+    "groq:openai/gpt-oss-120b"
+   ],
+   "traceId": "mvxx75eescxt3"
+  },
+  {
+   "slug": "slack",
+   "name": "Slack",
+   "ok": true,
+   "tierAcc": 0.3333333333333333,
+   "capCoverage": 0.3333333333333333,
+   "gateRecall": 1,
+   "gateRecallLoose": 1,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 1,
+   "factsChecked": 7,
+   "downgraded": 0,
+   "corrected": 0,
+   "corrections": 2,
+   "faultCaught": false,
+   "retrievers": {
+    "fetch": 9,
+    "firecrawl": 4
+   },
+   "jevDecisions": 0,
+   "latencyMs": 50263,
+   "tokens": 17378,
+   "models": [
+    "groq:qwen/qwen3.8-27b",
+    "groq:openai/gpt-oss-20b",
+    "groq:openai/gpt-oss-120b"
+   ],
+   "traceId": "mvxx83fq50m3x"
+  },
+  {
+   "slug": "hubspot",
+   "name": "HubSpot",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 1,
+   "gateRecallLoose": 1,
+   "waitOverlap": 0,
+   "goldWait": "2w–7w",
+   "predWait": "Same day",
+   "citationValidity": 0.8461538461538461,
+   "factsChecked": 13,
+   "downgraded": 2,
+   "corrected": 0,
+   "corrections": 2,
+   "faultCaught": false,
+   "retrievers": {
+    "fetch": 6,
+    "firecrawl": 4
+   },
+   "jevDecisions": 0,
+   "latencyMs": 29723,
+   "tokens": 13232,
+   "models": [
+    "groq:qwen/qwen3.8-27b",
+    "groq:openai/gpt-oss-120b"
+   ],
+   "traceId": "mvxx9684amu8c"
+  },
+  {
+   "slug": "outlook",
+   "name": "Microsoft Outlook",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0.5,
+   "gateRecall": 0.5,
+   "gateRecallLoose": 0.5,
+   "waitOverlap": 0,
+   "goldWait": "1d–10d",
+   "predWait": "Same day",
+   "citationValidity": 0.7272727272727273,
+   "factsChecked": 11,
+   "downgraded": 3,
+   "corrected": 0,
+   "corrections": 5,
+   "faultCaught": true,
+   "retrievers": {
+    "firecrawl": 5,
+    "fetch": 10
+   },
+   "jevDecisions": 0,
+   "latencyMs": 53719,
+   "tokens": 19004,
+   "models": [
+    "groq:openai/gpt-oss-120b",
+    "groq:openai/gpt-oss-20b"
+   ],
+   "traceId": "mvxx9t5x69jbx"
+  },
+  {
+   "slug": "gmail",
+   "name": "Gmail",
+   "ok": true,
+   "tierAcc": 0.3333333333333333,
+   "capCoverage": 0.3333333333333333,
+   "gateRecall": 1,
+   "gateRecallLoose": 1,
+   "waitOverlap": 0,
+   "goldWait": "5w–2mo",
+   "predWait": "5d–2w",
+   "citationValidity": 0.6428571428571429,
+   "factsChecked": 14,
+   "downgraded": 5,
+   "corrected": 0,
+   "corrections": 8,
+   "faultCaught": true,
+   "retrievers": {
+    "firecrawl": 6,
+    "fetch": 10
+   },
+   "jevDecisions": 0,
+   "latencyMs": 96475,
+   "tokens": 17376,
+   "models": [
+    "groq:openai/gpt-oss-120b",
+    "groq:qwen/qwen3.8-27b",
+    "groq:openai/gpt-oss-20b"
+   ],
+   "traceId": "mvxxaymvpy6kh"
+  },
+  {
+   "slug": "salesforce",
+   "name": "Salesforce",
+   "ok": true,
+   "tierAcc": 0.5,
+   "capCoverage": 0.5,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 0.4,
+   "factsChecked": 10,
+   "downgraded": 6,
+   "corrected": 0,
+   "corrections": 6,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 10,
+    "firecrawl": 5
+   },
+   "jevDecisions": 0,
+   "latencyMs": 69171,
+   "tokens": 16335,
+   "models": [
+    "groq:openai/gpt-oss-120b",
+    "groq:openai/gpt-oss-20b"
+   ],
+   "traceId": "mvxxd13d9nge8"
+  },
+  {
+   "slug": "instagram",
+   "name": "Instagram",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0,
+   "gateRecall": 1,
+   "gateRecallLoose": 1,
+   "waitOverlap": 0,
+   "goldWait": "7d–5w",
+   "predWait": "Same day",
+   "citationValidity": 0.8,
+   "factsChecked": 5,
+   "downgraded": 1,
+   "corrected": 1,
+   "corrections": 5,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 3,
+    "firecrawl": 3
+   },
+   "jevDecisions": 0,
+   "latencyMs": 45566,
+   "tokens": 14836,
+   "models": [
+    "groq:openai/gpt-oss-120b",
+    "groq:openai/gpt-oss-20b",
+    "groq:qwen/qwen3.8-27b"
+   ],
+   "traceId": "mvxxeih5lx9qk"
+  },
+  {
+   "slug": "linkedin",
+   "name": "LinkedIn",
+   "ok": true,
+   "tierAcc": 0.25,
+   "capCoverage": 0.25,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 0,
+   "goldWait": "≤2d",
+   "predWait": "Same day",
+   "citationValidity": 1,
+   "factsChecked": 9,
+   "downgraded": 0,
+   "corrected": 0,
+   "corrections": 3,
+   "faultCaught": false,
+   "retrievers": {
+    "fetch": 12,
+    "firecrawl": 1
+   },
+   "jevDecisions": 0,
+   "latencyMs": 56010,
+   "tokens": 17825,
+   "models": [
+    "groq:qwen/qwen3.8-27b",
+    "groq:openai/gpt-oss-20b",
+    "groq:openai/gpt-oss-120b"
+   ],
+   "traceId": "mvxxfhn1t8v3t"
+  },
+  {
+   "slug": "twitter",
+   "name": "X (Twitter) API",
+   "ok": true,
+   "tierAcc": 0,
+   "capCoverage": 0.6666666666666666,
+   "gateRecall": 0,
+   "gateRecallLoose": 0,
+   "waitOverlap": 1,
+   "goldWait": "Same day",
+   "predWait": "Same day",
+   "citationValidity": 0,
+   "factsChecked": 6,
+   "downgraded": 6,
+   "corrected": 2,
+   "corrections": 9,
+   "faultCaught": true,
+   "retrievers": {
+    "fetch": 18
+   },
+   "jevDecisions": 0,
+   "latencyMs": 69670,
+   "tokens": 18994,
+   "models": [
+    "groq:openai/gpt-oss-120b",
+    "groq:openai/gpt-oss-20b"
+   ],
+   "traceId": "mvxxgov8hvp0q"
+  }
+ ]
+}

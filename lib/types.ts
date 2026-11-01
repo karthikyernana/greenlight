@@ -91,6 +91,11 @@ export type IndexEntry = {
   category?: string;
   curated?: boolean;
   generated?: boolean;
+  /** publishing state: curated (hand-researched), verified (agent-generated, passed every check), draft */
+  status?: "curated" | "verified" | "draft";
+  /** stored in the shared store (generated once, reused) */
+  stored?: boolean;
+  domain?: string;
   // headline for the board
   difficulty?: string;
   wait?: string;

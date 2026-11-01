@@ -57,7 +57,7 @@ async function postJson(url: string, headers: Record<string, string>, body: unkn
   try {
     const r = await fetch(url, { method: "POST", signal: ctl.signal, headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
     const txt = await r.text();
-    if (!r.ok) throw new HttpErr(r.status, `${label} ${r.status}: ${txt.slice(0, 200)}`);
+    if (!r.ok) throw new HttpErr(r.status, `${label} ${r.status}: ${txt.slice(0, r.status === 429 ? 600 : 200).replace(/org_[a-z0-9]{8,}/gi, "org_[redacted]")}`);
     return JSON.parse(txt);
   } catch (e: any) {
     if (e?.name === "AbortError") throw new HttpErr(408, outer?.aborted ? `${label} cancelled (another model answered first)` : `${label} timed out after ${Math.round(timeoutMs / 1000)}s`);
@@ -110,7 +110,7 @@ function gemini(key: string, models: string[]): Provider {
     id: "gemini", label: "Gemini", models,
     async call(model, system, user, timeoutMs, signal) {
       const j = await postJson(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { "x-goog-api-key": key }, {
-        systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: user }] }], generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
+        systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: user }] }], generationConfig: { responseMimeType: "application/json", temperature: 0.1, ...(/2\.5-flash/.test(model) ? { thinkingConfig: { thinkingBudget: Number(env("GEMINI_THINKING_BUDGET") || 0) } } : {}) },
       }, timeoutMs, `gemini:${model}`, signal);
       const text = (j.candidates?.[0]?.content?.parts || []).filter((p: any) => !p.thought).map((p: any) => p.text || "").join("");
       return { text, usage: { prompt: j.usageMetadata?.promptTokenCount || 0, completion: j.usageMetadata?.candidatesTokenCount || 0 } };
@@ -118,11 +118,18 @@ function gemini(key: string, models: string[]): Provider {
   };
 }
 
+/** Defaults when GEMINI_MODEL / GROQ_MODEL are unset. A 404 on one model moves to the next. */
+export const GEMINI_DEFAULT = "gemini-2.5-flash,gemini-flash-latest";
+/* Groq models listed by GET /models on 2026-11-01. Each has its own tokens-per-minute limit on the free tier,
+   so the 20B and Qwen models are real fallbacks when the 120B hits its TPM cap. */
+export const GROQ_DEFAULT = "openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3.8-27b";
+export const FALLBACK_ORDER = ["LLM_* (LLM_BASE_URL + LLM_API_KEY + LLM_MODEL)", "GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY"];
+
 export function providers(): Provider[] {
   const out: Provider[] = [];
   if (env("LLM_BASE_URL") && env("LLM_API_KEY") && env("LLM_MODEL")) out.push(openAICompat("llm", "OpenAI-compatible (LLM_*)", env("LLM_BASE_URL"), env("LLM_API_KEY"), list(env("LLM_MODEL"))));
-  if (env("GEMINI_API_KEY")) out.push(gemini(env("GEMINI_API_KEY"), list(env("GEMINI_MODEL") || "gemini-2.5-flash,gemini-2.0-flash")));
-  if (env("GROQ_API_KEY")) out.push(openAICompat("groq", "Groq", "https://api.groq.com/openai/v1", env("GROQ_API_KEY"), list(env("GROQ_MODEL") || "openai/gpt-oss-120b,llama-3.3-70b-versatile")));
+  if (env("GEMINI_API_KEY")) out.push(gemini(env("GEMINI_API_KEY"), list(env("GEMINI_MODEL") || GEMINI_DEFAULT)));
+  if (env("GROQ_API_KEY")) out.push(openAICompat("groq", "Groq", "https://api.groq.com/openai/v1", env("GROQ_API_KEY"), list(env("GROQ_MODEL") || GROQ_DEFAULT)));
   if (env("OPENROUTER_API_KEY")) out.push(openAICompat("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", env("OPENROUTER_API_KEY"), list(env("OPENROUTER_MODEL") || "openai/gpt-oss-20b:free,deepseek/deepseek-chat-v3.1:free"), { "x-title": "Greenlight" }));
   return out;
 }
@@ -133,12 +140,17 @@ export function providerStatus() {
   return {
     primary: ps[0] ? { id: ps[0].id, label: ps[0].label, model: ps[0].models[0], host: ps[0].id === "llm" ? host(env("LLM_BASE_URL")) : undefined } : null,
     configured: ps.map((p) => ({ id: p.id, label: p.label, models: p.models })),
+    /** The order calls fall through when a provider fails (402/5xx/timeouts/invalid JSON); unset ones are skipped. */
+    fallbackOrder: FALLBACK_ORDER,
+    order: ps.map((p) => p.id),
+    gemini: { configured: !!env("GEMINI_API_KEY"), models: list(env("GEMINI_MODEL") || GEMINI_DEFAULT), modelFrom: env("GEMINI_MODEL") ? "GEMINI_MODEL" : "default" },
+    groq: { configured: !!env("GROQ_API_KEY"), models: list(env("GROQ_MODEL") || GROQ_DEFAULT), modelFrom: env("GROQ_MODEL") ? "GROQ_MODEL" : "default" },
     missing: {
       LLM_BASE_URL: !env("LLM_BASE_URL"), LLM_API_KEY: !env("LLM_API_KEY"), LLM_MODEL: !env("LLM_MODEL"),
     },
     retrieval: "own (web search + direct fetch); no provider grounding",
     any: ps.length > 0,
-    hint: ps.length ? null : "No model configured. Set LLM_BASE_URL, LLM_API_KEY and LLM_MODEL on the Vercel project and redeploy. Probes and the Composio check run without one.",
+    hint: ps.length ? null : "No model configured. Set LLM_BASE_URL + LLM_API_KEY + LLM_MODEL, or GEMINI_API_KEY, or GROQ_API_KEY on the Vercel project and redeploy. Stored guides still load; probes and the Composio check run without a model.",
   };
 }
 
@@ -176,7 +188,10 @@ async function withRetry<T>(fn: () => Promise<T>, tries = 2): Promise<T> {
       last = e;
       const st = e?.status || 0;
       if (st && st < 500 && st !== 429) break;
-      if (i < tries - 1) await sleep(600 * 2 ** i);
+      // rate limits that name their reset ("try again in 7.4s") are waited out, up to 15s
+      const m = st === 429 ? String(e?.message || "").match(/try again in ([\d.]+)\s*(ms|s)/i) : null;
+      const waitMs = m ? Math.min(15_000, Number(m[1]) * (m[2].toLowerCase() === "ms" ? 1 : 1000) + 250) : 600 * 2 ** i;
+      if (i < tries - 1) await sleep(waitMs);
     }
   }
   throw last;

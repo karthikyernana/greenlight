@@ -40,7 +40,7 @@ export default function Runway({ steps, onPick }: { steps: Step[]; onPick?: (id:
           <span className="mono whitespace-nowrap text-[11px] font-semibold text-signal-ink">{liveLabel} <span aria-hidden>▼</span></span>
         </div>
         <div />
-        <div className="relative h-5 border-b border-ink">
+        <div className="relative h-5 border-b border-ink-3">
           {ticks.map((t) => (
             <span key={t.label} className="rw-tick absolute bottom-0 flex flex-col items-start" style={{ left: `${t.x * 100}%` }}>
               <span className="mono num mb-0.5 text-[10.5px] text-ink-3">{t.label.toUpperCase()}</span>
@@ -88,16 +88,16 @@ export default function Runway({ steps, onPick }: { steps: Step[]; onPick?: (id:
                   >
                     {b.kind === "wait" ? (
                       <>
-                        <span className={`wait-solid relative h-full ${b.critical ? "crit" : ""}`} style={{ width: `${(solid / (solid + tail || 1)) * 100}%`, minWidth: 14 }}>
+                        <span className={`wait-solid relative h-full rounded-l-[4px] ${tail > 0 ? "" : "rounded-r-[4px]"} ${b.critical ? "crit" : ""}`} style={{ width: `${(solid / (solid + tail || 1)) * 100}%`, minWidth: 14 }}>
                           <span className="mono absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-ink">{label}</span>
                         </span>
-                        {tail > 0 && <span className="wait-hatch h-full flex-1" />}
+                        {tail > 0 && <span className="wait-hatch h-full flex-1 rounded-r-[4px]" />}
                       </>
                     ) : (
                       <span
-                        className={`mono flex h-full w-full items-center justify-center text-[10px] font-semibold ${
+                        className={`mono flex h-full w-full items-center justify-center rounded-[4px] text-[10px] font-semibold ${
                           lane.id === "you" ? "bg-ink text-white" : "border border-ink bg-surface text-ink"
-                        } ${b.critical ? "!border-signal !bg-signal !text-ink" : ""} group-hover:outline group-hover:outline-1 group-hover:outline-ink`}
+                        } ${b.critical ? "!border-signal !bg-signal !text-ink" : ""} group-hover:shadow-[0_0_0_1.5px_var(--color-ink)]`}
                       >
                         {label}
                       </span>
@@ -110,10 +110,10 @@ export default function Runway({ steps, onPick }: { steps: Step[]; onPick?: (id:
         );
       })}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-ink-3">
-        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 border border-ink bg-surface" /> agent work</span>
-        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 bg-ink" /> your work</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-[3px] border border-ink bg-surface" /> agent work</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-[3px] bg-ink" /> your work</span>
         <span className="flex items-center gap-1.5"><span className="wait-solid inline-block h-2.5 w-3" /><span className="wait-hatch -ml-1.5 inline-block h-2.5 w-3" /> provider wait (likely → worst)</span>
-        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 bg-signal" /> critical path</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-[3px] bg-signal" /> critical path</span>
         <span className="hidden sm:inline">Log time scale: a 10-minute task and a 6-week review share one ruler.</span>
       </div>
     </div>

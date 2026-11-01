@@ -211,7 +211,7 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
     yield stage("scopes", "skipped", !ps.length ? "No model configured" : "No readable docs");
     yield stage("gates", "skipped", !ps.length ? "No model configured" : "No readable docs");
     yield stage("verify", "skipped");
-    yield { type: "error", code: !ps.length ? "no_model" : "model_down", message: !ps.length ? "Investigation needs a model. Set LLM_BASE_URL, LLM_API_KEY and LLM_MODEL on the deployment. The Composio check and probes above ran live." : "Couldn't read any of this app's developer docs, so there is nothing to classify. The live checks above still ran." };
+    yield { type: "error", code: !ps.length ? "no_model" : "model_down", message: !ps.length ? "Investigation needs a model. Set LLM_* or GEMINI_API_KEY or GROQ_API_KEY on the deployment. The Composio check and probes above ran live." : "Couldn't read any of this app's developer docs, so there is nothing to classify. The live checks above still ran." };
     yield finish("partial", "no model or no docs");
     return;
   }
@@ -354,6 +354,7 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
   // one LLM critic pass for contradictions
   let criticIssues: CriticOutT["issues"] = [];
   const correctionsOut: PipeEvent[] = [];
+  const resolved = new Set<string>();
   try {
     if (Date.now() < deadline - 40_000) {
       const list = facts.filter((f) => !f.id.startsWith("probe")).map((f) => `${f.id} [${f.status}] ${f.claim}`).join("\n");
@@ -401,11 +402,15 @@ export async function* investigate(q: string, opts: RunOpts = {}): AsyncGenerato
           const stId = [...stepFact.entries()].find(([, v]) => v === id)?.[0];
           if (stId && d.waitDays?.length === 2) { const st = gates.steps.find((x) => x.id === stId); if (st) st.waitDays = [d.waitDays[0], d.waitDays[1]]; }
         } else f.note = "Confirmed on re-check";
+        resolved.add(id);
         correctionsOut.push({ type: "correction", id, claim: f.claim, from: "uncertain", to: d.verdict === "corrected" ? "corrected" : "sourced", reason: d.verdict === "corrected" ? `corrected: ${before.slice(0, 80)} → ${f.claim.slice(0, 80)}` : "confirmed on re-check" });
       } catch {}
     }));
     for (const c of correctionsOut.splice(0)) yield c;
   }
+  // contradictions the critic flagged count as resolved only when a re-check confirmed or corrected that fact
+  const flagged = new Set(criticIssues.map((i) => i.factId).filter((id) => facts.some((f) => f.id === id)));
+  trace.verifier.unresolved = [...flagged].filter((id) => !resolved.has(id)).length;
   const nS = facts.filter((f) => f.status === "sourced").length, nU = facts.filter((f) => f.status === "uncertain").length, nT = facts.filter((f) => f.status === "tested").length;
   yield stage("verify", nU > nS ? "warn" : "done", `${trace.verifier.quoteMatched}/${trace.verifier.checked} quotes matched · ${trace.verifier.downgraded} downgraded · ${trace.verifier.corrected} corrected · ${nT} tested`);
 
