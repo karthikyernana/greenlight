@@ -91,7 +91,7 @@ What each feature contributed, as far as it can be separated:
 
 Caveats: 10 apps is a small sample; tier accuracy stays low because the model labels capabilities differently from the golden graphs (the scorer matches by scope string or label overlap). X still scores 0 (its docs are JS-rendered and its gates are pricing, not review). Groq's free tier rate-limits tokens per minute, so runs use `--concurrency 1`.
 
-### Production: cold vs cached (Xero, https://oauth-greenlight-v2.vercel.app, 2026-11-01)
+### Production: cold vs cached (Xero, https://getgreenlight.vercel.app, 2026-11-01)
 
 | Request | Latency | Model calls | Served from |
 |---|---|---|---|
@@ -108,7 +108,7 @@ Production cold → cached: 280.6 s → 0.29–1.19 s (−99.6% or better). The 
 npm run eval -- --mock --faults --concurrency 3          # no key needed; verifier fault test
 LLM_BASE_URL=… LLM_API_KEY=… LLM_MODEL="MiniMaxAI/MiniMax-M2.7,deepseek-ai/DeepSeek-V4-Flash-0731" \
   npm run eval -- --budget 60000 --concurrency 3         # real model, in-process
-EVAL_BASE_URL=https://oauth-greenlight-v2.vercel.app npm run eval -- --apps slack,hubspot   # against a deployment
+EVAL_BASE_URL=https://getgreenlight.vercel.app npm run eval -- --apps slack,hubspot   # against a deployment
 npm run eval -- --apps gmail,slack                       # subset
 FIRECRAWL_API_KEY=… npm run eval -- --mock --faults --tag firecrawl   # retrieval comparison; result file gets the tag
 ```

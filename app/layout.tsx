@@ -11,7 +11,7 @@ const host = Host_Grotesk({ subsets: ["latin"], variable: "--font-host", display
 const jet = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jet", display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://oauth-greenlight-v2.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://getgreenlight.vercel.app"),
   title: "Greenlight: how long until your agent's users can connect",
   description: "Say what your agent needs. Greenlight works out your path from today to real users connecting, from verified facts, and hands you the pieces an agent can prepare.",
 };

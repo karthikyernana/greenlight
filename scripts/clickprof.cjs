@@ -5,7 +5,7 @@
    - content: when the guide's h1 (data-vt=app-title) with the app name is in the DOM and painted
    Also logs network requests made after the click and long tasks. */
 const puppeteer = require("puppeteer-core");
-const BASE = (process.argv[2] || "https://oauth-greenlight-v2.vercel.app").replace(/\/$/, "");
+const BASE = (process.argv[2] || "https://getgreenlight.vercel.app").replace(/\/$/, "");
 const MODE = process.argv[3] || "mobile";
 const SLUG = process.argv[4] || "gmail";
 const RUNS = Number(process.env.RUNS || 3);

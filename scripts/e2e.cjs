@@ -1,6 +1,6 @@
 /* End-to-end browser tests (puppeteer-core + a system Chromium).
      npm run e2e                                   → against http://localhost:3100 (a `next start` with GREENLIGHT_FAKE_PIPELINE=1)
-     E2E_BASE=https://oauth-greenlight-v2.vercel.app npm run e2e   → against a deployment (the mocked-investigation test is skipped)
+     E2E_BASE=https://getgreenlight.vercel.app npm run e2e   → against a deployment (the mocked-investigation test is skipped)
    Env: E2E_ONLY=<regex> runs only the tests whose name matches. CHROME_PATH (default /usr/bin/chromium), E2E_CHROME_ARGS (extra Chromium flags, e.g. --no-proxy-server when an
         authenticating egress proxy is set in the environment and Chromium fails with ERR_INVALID_AUTH_CREDENTIALS), E2E_SHOTS=<dir> to save desktop 1440 + mobile 390 screenshots,
         E2E_FAKE=1 when the server runs the fake pipeline (default on for localhost).

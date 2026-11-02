@@ -2,7 +2,7 @@
 
 **How long until your agent's users can connect? Start the slow parts today.**
 
-Live: **https://oauth-greenlight-v2.vercel.app** · Source: this branch (`v4`) · Built as the Composio APM (Integrations) take-home.
+Live: **https://getgreenlight.vercel.app** · Source: this branch (`v4`) · Built as the Composio APM (Integrations) take-home.
 
 Pick an app (or type any app name or website) and tick what your agent needs to do. Greenlight shows how hard approval is, the realistic wait including the provider's review, what an agent can prepare versus what only you can do, the next step, and what to do when you hit a blocker. Every number traces to a fact marked **Tested**, **Sourced** or **Uncertain**, with its source link. Apps outside the library are investigated live by agents and saved as a shareable guide.
 

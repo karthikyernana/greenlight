@@ -108,7 +108,7 @@ const NOT_SOFTWARE = /\b(film|movie|video game|novel|book|song|album|single|band
 
 export async function wikidataSoftware(name: string, f: typeof fetch, signal?: AbortSignal): Promise<string | null> {
   const url = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(name)}&language=en&format=json&limit=5&type=item&origin=*`;
-  const r = await f(url, { headers: { "user-agent": "Greenlight/4 (OAuth readiness prototype; https://oauth-greenlight-v2.vercel.app)" }, signal });
+  const r = await f(url, { headers: { "user-agent": "Greenlight/4 (OAuth readiness prototype; https://getgreenlight.vercel.app)" }, signal });
   if (!r.ok) return null;
   const j: any = await r.json();
   for (const x of j.search || []) {

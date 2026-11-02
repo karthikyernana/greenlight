@@ -1,6 +1,6 @@
 # Demo script (3 minutes, v4.1)
 
-**Before recording.** Open https://oauth-greenlight-v2.vercel.app in a clean browser window at 1440 px, zoom 100%. Pick the live app now: an app that is **not** already in `https://oauth-greenlight-v2.vercel.app/api/store` (e.g. Asana or Typeform; Pipedrive, Miro, Webflow and Todoist are already stored and would open instantly). Check `/api/status` shows `"any": true`. Have a second browser (or an incognito window) ready for the share-link check.
+**Before recording.** Open https://getgreenlight.vercel.app in a clean browser window at 1440 px, zoom 100%. Pick the live app now: an app that is **not** already in `https://getgreenlight.vercel.app/api/store` (e.g. Asana or Typeform; Pipedrive, Miro, Webflow and Todoist are already stored and would open instantly). Check `/api/status` shows `"any": true`. Have a second browser (or an incognito window) ready for the share-link check.
 
 **0:00 · The problem (20 s) — Home.**
 > "Getting an OAuth client ID takes five minutes. Getting approved so your agent's users can connect can take a day or two months, and the scopes you ask for decide which. Greenlight works out that path, cites every number, and tells you what to start today."
