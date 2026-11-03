@@ -56,12 +56,13 @@ test("stored guides from before check 4 get it on read: an old Verified can drop
   assert.equal(withSourceCheck({ ...old, status: "curated" }, zomato).status, "curated");
   // through the store: the record is written as Verified (simulating a pre-check-4 blob) and read back as Draft
   const b = mem(); _setBackend(b);
-  await b.put("guides/zomato.json", JSON.stringify({ v: 1, slug: "zomato", keys: ["zomato"], graph: zomato, publish: old, storedAt: new Date().toISOString(), lastRunAt: new Date().toISOString(), runs: 1 }));
-  assert.equal((await getStored("zomato", { fresh: true }))!.publish.status, "draft");
+  await b.put("guides/acmefood.json", JSON.stringify({ v: 1, slug: "acmefood", keys: ["acmefood"], graph: zomato, publish: old, storedAt: new Date().toISOString(), lastRunAt: new Date().toISOString(), runs: 1 }));
+  assert.equal((await getStored("acmefood", { fresh: true }))!.publish.status, "draft");
+  assert.equal(await getStored("zomato", { fresh: true }), null, "zomato is retired");
 });
 
 test("retired store entries stop resolving and leave the board", async () => {
-  assert.ok(RETIRED.capiclan);
+  assert.ok(RETIRED.capiclan && RETIRED.swiggy && RETIRED.zomato);
   const g = gen("capiclan", "google.com", "developers.google.com");
   await putStored({ ...g, slug: "capiclan" });
   await putStored(gen("Pipedrive", "pipedrive.com", "pipedrive.readme.io"));

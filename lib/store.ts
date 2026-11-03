@@ -131,6 +131,8 @@ const tracePath = (id: string) => `traces/${id}.json`;
     without touching the blob, so this is reversible. A withdrawn name that is typed again goes through the input gate. */
 export const RETIRED: Record<string, string> = {
   capiclan: "A stock-market consultancy with no public OAuth API. Investigated before the input gate existed (2026-11-01), the run built a Google guide for it and the old checks marked it Verified.",
+  swiggy: "A food-delivery app with no public third-party OAuth program. Withdrawn 2026-11-03: the guide could only describe generic steps.",
+  zomato: "No public third-party OAuth program. Withdrawn 2026-11-03: its gates had cited Google's verification pages, not Zomato's.",
 };
 
 function parseRecord(raw: string | null): StoredGuide | null {
