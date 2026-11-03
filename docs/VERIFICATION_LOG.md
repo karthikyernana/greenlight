@@ -41,3 +41,4 @@ Curated graphs, rebuilt 2026-11-01 by `scripts/build-graph.ts`: every source was
 
 ## Live model check
 The OpenAI-compatible path was exercised against the JoinGonka gateway on 2026-11-01 (DeepSeek-V4-Flash, GLM-5.3-Flash, MiniMax-M2.7). See HARNESS.md for scores and latency.
+- **2026-11-03: the domain check had a hole.** A live Typeform run was marked Verified with steps reading "Start connection in Serval": it had no gates, so check 4 had nothing to judge, and its steps came from a third-party platform's docs (docs.serval.com). Check 4 now covers steps too (each must cite the provider or Composio). Re-read on the store, it also moved Figma (two steps from klavis.ai) and kept Xero (workos.com) at Draft.

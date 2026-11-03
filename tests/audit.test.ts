@@ -44,7 +44,8 @@ test("publishing check 4: a guide whose gates cite only another company's docs s
   const v = publishVerdict(zomato, { checked: 10, quoteMatched: 10, unresolved: 0 });
   assert.equal(v.status, "draft");
   assert.match(v.failed.join(" "), /cite no zomato\.com page/);
-  assert.equal(sourceCheck({ ...zomato, gates: [] }).pass, true, "no gates → nothing to cite");
+  assert.equal(sourceCheck({ ...zomato, gates: [] }).pass, false, "no gates, but its steps still cite only google.com");
+  assert.equal(sourceCheck({ ...ok, gates: [] }).pass, true, "no gates and own-domain steps → passes");
 });
 
 test("stored guides from before check 4 get it on read: an old Verified can drop to Draft", async () => {
@@ -142,4 +143,17 @@ test("runway live date uses the same calendar days as the headline wait", () => 
   const now = new Date("2026-11-02T10:00:00");
   assert.equal(liveDate(60, now), "1 Jan");
   assert.equal(liveDate(14, now), "16 Nov");
+});
+
+test("check 4 covers steps: a gate-free guide built from a third-party platform's how-to stays Draft", () => {
+  const tf = { ...gen("Typeform", "typeform.com", "docs.serval.com"), gates: [] } as ProviderGraph;
+  const c = sourceCheck(tf);
+  assert.equal(c.pass, false);
+  assert.match(c.detail, /steps? cite only other companies' pages/);
+  const ok = { ...gen("Typeform", "typeform.com", "www.typeform.com"), gates: [] } as ProviderGraph;
+  assert.equal(sourceCheck(ok).pass, true);
+  const viaComposio = { ...gen("Typeform", "typeform.com", "docs.composio.dev"), gates: [] } as ProviderGraph;
+  assert.equal(sourceCheck(viaComposio).pass, true, "Composio's own docs count for setup steps");
+  const old = { status: "verified" as const, checks: [{ id: "sources" as const, label: "Gates cite the provider's own docs", pass: true, detail: "no gates found" }], failed: [], at: "" };
+  assert.equal(withSourceCheck(old, tf).status, "draft", "a guide stored under the older check is re-judged on read");
 });

@@ -93,21 +93,33 @@ export function isProviderUrl(g: Pick<ProviderGraph, "domain" | "console">, url:
 /** Check 4: each gate stands on at least one of the provider's own pages. */
 export function sourceCheck(g: ProviderGraph): PublishCheck {
   const facts = new Map(g.facts.map((f) => [f.id, f]));
+  const own = (u?: string) => !!u && (isProviderUrl(g, u) || /(^|\.)composio\.dev$/.test(hostOf(u)));
   const off: string[] = [];
   for (const [gid, ids] of gateFactIds(g)) {
     if (!ids.some((id) => { const f = facts.get(id); return !!f?.url && isProviderUrl(g, f.url); })) off.push(g.gates.find((x) => x.id === gid)?.label || gid);
   }
+  // Steps too: a step whose cited pages are all another company's (a third-party platform's how-to) is not this provider's setup.
+  const offSteps: string[] = [];
+  for (const st of g.steps) {
+    const urls = (st.facts || []).map((id) => facts.get(id)?.url).filter(Boolean) as string[];
+    if (urls.length && !urls.some((u) => own(u))) offSteps.push(st.title);
+  }
+  const bits: string[] = [];
+  if (off.length) bits.push(`${off.length} of ${g.gates.length} gate${g.gates.length > 1 ? "s" : ""} cite no ${g.domain} page (${off.slice(0, 2).join("; ")}${off.length > 2 ? "…" : ""})`);
+  if (offSteps.length) bits.push(`${offSteps.length} of ${g.steps.length} step${g.steps.length > 1 ? "s" : ""} cite only other companies' pages (${offSteps.slice(0, 2).join("; ")}${offSteps.length > 2 ? "…" : ""})`);
   return {
-    id: "sources", label: "Gates cite the provider's own docs", pass: off.length === 0,
-    detail: off.length ? `${off.length} of ${g.gates.length} gate${g.gates.length > 1 ? "s" : ""} cite no ${g.domain} page (${off.slice(0, 2).join("; ")}${off.length > 2 ? "…" : ""})` : g.gates.length ? `all ${g.gates.length} on ${g.domain}` : "no gates found",
+    id: "sources", label: "Gates and steps cite the provider's own docs", pass: bits.length === 0,
+    detail: bits.length ? bits.join("; ") : g.gates.length ? `all ${g.gates.length} gate${g.gates.length > 1 ? "s" : ""} on ${g.domain}` : "no gates; steps cite the provider or Composio",
   };
 }
 
 /** Guides stored before check 4 existed get it applied when read, so an older "Verified" can drop to Draft. */
 export function withSourceCheck(p: PublishVerdict, g: ProviderGraph): PublishVerdict {
-  if (p.status === "curated" || p.checks.some((c) => c.id === "sources")) return p;
+  if (p.status === "curated") return p;
   const c = sourceCheck(g);
-  const checks = [...p.checks, c];
-  const failed = c.pass ? p.failed : [...p.failed, `${c.label}: ${c.detail}`];
+  const prev = p.checks.find((x) => x.id === "sources");
+  if (prev && prev.label === c.label && prev.pass === c.pass) return p;
+  const checks = [...p.checks.filter((x) => x.id !== "sources"), c];
+  const failed = [...p.failed.filter((f) => !/cite the provider's own docs/.test(f)), ...(c.pass ? [] : [`${c.label}: ${c.detail}`])];
   return { ...p, checks, failed, status: failed.length ? "draft" : p.status };
 }
